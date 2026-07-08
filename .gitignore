@@ -1,0 +1,23 @@
+# Licensed under the MIT License.
+# Copyright (c) 2026 minhd
+
+# Gradle files
+.gradle/
+build/
+
+# Android Studio / IntelliJ IDEA files
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
