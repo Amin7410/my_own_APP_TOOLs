@@ -17,7 +17,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,16 +28,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_JPEG
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_FORMAT_PDF
@@ -250,7 +247,7 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-                onClick = { excelPickerLauncher.launch("*/*") }, // Dùng */* để tránh lỗi kén MIME type trên một số máy
+                onClick = { excelPickerLauncher.launch("*/*") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -291,6 +288,7 @@ class MainActivity : ComponentActivity() {
         var pdfBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var isLoading by remember { mutableStateOf(true) }
+        var zoomLevel by remember { mutableStateOf(1f) } // Mức thu phóng từ 1.0 đến 3.0
 
         LaunchedEffect(uri) {
             try {
@@ -303,6 +301,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
+            // Thanh điều hướng trên
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -314,11 +313,41 @@ class MainActivity : ComponentActivity() {
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Đang đọc PDF",
+                    text = "Đọc PDF",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            // Thanh công cụ thu phóng an toàn (Không bị lỗi tranh chấp cử chỉ kéo cuộn)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = { zoomLevel = (zoomLevel - 0.25f).coerceIn(1f, 3f) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Thu nhỏ (-)")
+                }
+                Text(
+                    text = "${(zoomLevel * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                OutlinedButton(
+                    onClick = { zoomLevel = (zoomLevel + 0.25f).coerceIn(1f, 3f) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Phóng to (+)")
+                }
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -329,19 +358,38 @@ class MainActivity : ComponentActivity() {
                     Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
                 }
             } else {
-                LazyColumn(
+                val horizontalScrollState = rememberScrollState()
+                
+                // Bao bọc cột cuộn trong một Box có thể cuộn ngang để thu phóng mượt mà
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 8.dp)
+                        .horizontalScroll(horizontalScrollState)
                 ) {
-                    items(pdfBitmaps) { bitmap ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            ZoomableImage(bitmap = bitmap)
+                    val configuration = LocalConfiguration.current
+                    val screenWidth = configuration.screenWidthDp.dp
+                    val currentWidth = screenWidth * zoomLevel
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .width(currentWidth)
+                            .fillMaxHeight()
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        items(pdfBitmaps) { bitmap ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "PDF Page",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentScale = ContentScale.FillWidth
+                                )
+                            }
                         }
                     }
                 }
@@ -350,47 +398,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ZoomableImage(bitmap: Bitmap) {
-        var scale by remember { mutableStateOf(1f) }
-        var offset by remember { mutableStateOf(Offset.Zero) }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(bitmap.width.toFloat() / bitmap.height.toFloat())
-                .clip(RectangleShape)
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        scale = (scale * zoom).coerceIn(1f, 4f)
-                        if (scale > 1f) {
-                            offset += pan
-                        } else {
-                            offset = Offset.Zero
-                        }
-                    }
-                }
-        ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "PDF Page",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offset.x,
-                        translationY = offset.y
-                    ),
-                contentScale = ContentScale.FillWidth
-            )
-        }
-    }
-
-    @Composable
     fun ExcelViewerScreen(uri: Uri, onBack: () -> Unit) {
         var excelData by remember { mutableStateOf<List<List<String>>>(emptyList()) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var isLoading by remember { mutableStateOf(true) }
+        var zoomLevel by remember { mutableStateOf(1f) } // Mức thu phóng từ 0.75 đến 2.0
 
         LaunchedEffect(uri) {
             try {
@@ -403,6 +415,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
+            // Thanh điều hướng trên
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -414,11 +427,41 @@ class MainActivity : ComponentActivity() {
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Đang đọc Excel",
+                    text = "Đọc Excel",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+
+            // Thanh thu phóng Excel
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = { zoomLevel = (zoomLevel - 0.15f).coerceIn(0.7f, 2f) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Thu nhỏ (-)")
+                }
+                Text(
+                    text = "${(zoomLevel * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                OutlinedButton(
+                    onClick = { zoomLevel = (zoomLevel + 0.15f).coerceIn(0.7f, 2f) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Phóng to (+)")
+                }
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -439,28 +482,35 @@ class MainActivity : ComponentActivity() {
             } else {
                 val horizontalScrollState = rememberScrollState()
 
+                // Cấu hình hiển thị bảng Excel: SỬA LỖI MÀN HÌNH TỐI, chuyển sang giao diện bảng tính sáng trắng dễ đọc
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(Color.White) // Nền bảng trắng tinh như Excel thật
                         .horizontalScroll(horizontalScrollState)
                 ) {
+                    val cellWidth = (120 * zoomLevel).dp
+                    val cellPadding = (6 * zoomLevel).dp
+                    val fontSize = (14 * zoomLevel).sp
+
                     LazyColumn(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(8.dp)
                     ) {
                         items(excelData) { row ->
                             Row {
                                 row.forEach { cellText ->
                                     Box(
                                         modifier = Modifier
-                                            .width(120.dp)
-                                            .padding(2.dp)
-                                            .background(MaterialTheme.colorScheme.surface)
-                                            .padding(8.dp)
+                                            .width(cellWidth)
+                                            .padding(1.dp)
+                                            .border(0.5.dp, Color.LightGray) // Đường kẻ lưới bảng màu xám nhẹ
+                                            .background(Color.White)
+                                            .padding(cellPadding)
                                     ) {
                                         Text(
                                             text = cellText,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            fontSize = fontSize,
+                                            color = Color.Black // Chữ đen rõ ràng trên nền trắng
                                         )
                                     }
                                 }
@@ -489,10 +539,7 @@ class MainActivity : ComponentActivity() {
             val width = 1080
             val height = (width * page.height) / page.width
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            
-            // SỬA LỖI GIAO DIỆN ĐEN/LỆCH: Tô nền trắng cho ảnh trước khi vẽ trang PDF lên (tránh nền trong suốt bị xuyên thấu nền đen của app)
             bitmap.eraseColor(android.graphics.Color.WHITE)
-            
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             bitmaps.add(bitmap)
             page.close()
@@ -506,8 +553,6 @@ class MainActivity : ComponentActivity() {
 
     private fun parseXlsx(context: Context, uri: Uri): List<List<String>> {
         val sharedStrings = mutableListOf<String>()
-        
-        // 1. Đọc shared strings một cách an toàn
         try {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 val zip = ZipInputStream(input)
@@ -524,14 +569,12 @@ class MainActivity : ComponentActivity() {
             e.printStackTrace()
         }
 
-        // 2. Tìm và đọc dữ liệu sheet
         val rows = mutableListOf<List<String>>()
         var hasReadSheet = false
         context.contentResolver.openInputStream(uri)?.use { input ->
             val zip = ZipInputStream(input)
             var entry = zip.nextEntry
             while (entry != null) {
-                // Sửa lỗi kén định dạng XML: Quét tất cả các file sheet bất kể viết hoa viết thường
                 if (entry.name.contains("worksheets/sheet", ignoreCase = true)) {
                     rows.addAll(parseSheet(zip, sharedStrings))
                     hasReadSheet = true
@@ -544,7 +587,6 @@ class MainActivity : ComponentActivity() {
         if (!hasReadSheet) {
             throw Exception("Không tìm thấy dữ liệu Sheet trong file Excel này.")
         }
-        
         return rows
     }
 
@@ -557,7 +599,7 @@ class MainActivity : ComponentActivity() {
         var insideT = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
-            val name = parser.name?.substringAfter(':') // Bỏ qua tiền tố Namespace (nếu có)
+            val name = parser.name?.substringAfter(':')
             when (eventType) {
                 XmlPullParser.START_TAG -> {
                     if (name == "t") {
@@ -594,7 +636,7 @@ class MainActivity : ComponentActivity() {
         var insideValue = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
-            val name = parser.name?.substringAfter(':') // Bỏ qua tiền tố Namespace (nếu có)
+            val name = parser.name?.substringAfter(':')
             when (eventType) {
                 XmlPullParser.START_TAG -> {
                     if (name == "row") {
