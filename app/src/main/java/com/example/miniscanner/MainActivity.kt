@@ -17,6 +17,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,8 +27,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -187,7 +193,7 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-                onClick = { excelPickerLauncher.launch("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") },
+                onClick = { excelPickerLauncher.launch("*/*") }, // Dùng */* để tránh lỗi kén MIME type trên một số máy
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -227,12 +233,15 @@ class MainActivity : ComponentActivity() {
     fun PdfViewerScreen(uri: Uri, onBack: () -> Unit) {
         var pdfBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        var isLoading by remember { mutableStateOf(true) }
 
         LaunchedEffect(uri) {
             try {
                 pdfBitmaps = renderPdfPages(this@MainActivity, uri)
+                isLoading = false
             } catch (e: Exception) {
                 errorMessage = "Không thể đọc PDF: ${e.message}"
+                isLoading = false
             }
         }
 
@@ -254,7 +263,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            if (errorMessage != null) {
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (errorMessage != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
                 }
@@ -271,16 +284,48 @@ class MainActivity : ComponentActivity() {
                                 .padding(vertical = 8.dp),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "PDF Page",
-                                modifier = Modifier.fillMaxWidth(),
-                                contentScale = ContentScale.FillWidth
-                            )
+                            ZoomableImage(bitmap = bitmap)
                         }
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    fun ZoomableImage(bitmap: Bitmap) {
+        var scale by remember { mutableStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(bitmap.width.toFloat() / bitmap.height.toFloat())
+                .clip(RectangleShape)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 4f)
+                        if (scale > 1f) {
+                            offset += pan
+                        } else {
+                            offset = Offset.Zero
+                        }
+                    }
+                }
+        ) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "PDF Page",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offset.x,
+                        translationY = offset.y
+                    ),
+                contentScale = ContentScale.FillWidth
+            )
         }
     }
 
@@ -295,7 +340,7 @@ class MainActivity : ComponentActivity() {
                 excelData = parseXlsx(this@MainActivity, uri)
                 isLoading = false
             } catch (e: Exception) {
-                errorMessage = "Lỗi đọc file Excel: ${e.message}"
+                errorMessage = "Lỗi đọc file Excel: ${e.message}\nHãy chắc chắn đây là file .xlsx"
                 isLoading = false
             }
         }
@@ -324,7 +369,15 @@ class MainActivity : ComponentActivity() {
                 }
             } else if (errorMessage != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else if (excelData.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = "File trống hoặc không đọc được dữ liệu")
                 }
             } else {
                 val horizontalScrollState = rememberScrollState()
@@ -379,6 +432,10 @@ class MainActivity : ComponentActivity() {
             val width = 1080
             val height = (width * page.height) / page.width
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            
+            // SỬA LỖI GIAO DIỆN ĐEN/LỆCH: Tô nền trắng cho ảnh trước khi vẽ trang PDF lên (tránh nền trong suốt bị xuyên thấu nền đen của app)
+            bitmap.eraseColor(android.graphics.Color.WHITE)
+            
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             bitmaps.add(bitmap)
             page.close()
@@ -392,29 +449,45 @@ class MainActivity : ComponentActivity() {
 
     private fun parseXlsx(context: Context, uri: Uri): List<List<String>> {
         val sharedStrings = mutableListOf<String>()
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            val zip = ZipInputStream(input)
-            var entry = zip.nextEntry
-            while (entry != null) {
-                if (entry.name == "xl/sharedStrings.xml") {
-                    sharedStrings.addAll(parseSharedStrings(zip))
+        
+        // 1. Đọc shared strings một cách an toàn
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                val zip = ZipInputStream(input)
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (entry.name.endsWith("sharedStrings.xml")) {
+                        sharedStrings.addAll(parseSharedStrings(zip))
+                        break
+                    }
+                    entry = zip.nextEntry
                 }
-                entry = zip.nextEntry
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
+        // 2. Tìm và đọc dữ liệu sheet
         val rows = mutableListOf<List<String>>()
+        var hasReadSheet = false
         context.contentResolver.openInputStream(uri)?.use { input ->
             val zip = ZipInputStream(input)
             var entry = zip.nextEntry
             while (entry != null) {
-                if (entry.name == "xl/worksheets/sheet1.xml") {
+                // Sửa lỗi kén định dạng XML: Quét tất cả các file sheet bất kể viết hoa viết thường
+                if (entry.name.contains("worksheets/sheet", ignoreCase = true)) {
                     rows.addAll(parseSheet(zip, sharedStrings))
+                    hasReadSheet = true
                     break
                 }
                 entry = zip.nextEntry
             }
         }
+        
+        if (!hasReadSheet) {
+            throw Exception("Không tìm thấy dữ liệu Sheet trong file Excel này.")
+        }
+        
         return rows
     }
 
@@ -423,23 +496,27 @@ class MainActivity : ComponentActivity() {
         val parser = Xml.newPullParser()
         parser.setInput(inputStream, "UTF-8")
         var eventType = parser.eventType
-        var currentText = ""
+        val currentText = StringBuilder()
         var insideT = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
-            val name = parser.name
+            val name = parser.name?.substringAfter(':') // Bỏ qua tiền tố Namespace (nếu có)
             when (eventType) {
                 XmlPullParser.START_TAG -> {
-                    if (name == "t") insideT = true
+                    if (name == "t") {
+                        insideT = true
+                        currentText.setLength(0)
+                    }
                 }
                 XmlPullParser.TEXT -> {
-                    if (insideT) currentText = parser.text
+                    if (insideT) {
+                        currentText.append(parser.text)
+                    }
                 }
                 XmlPullParser.END_TAG -> {
                     if (name == "t") {
-                        list.add(currentText)
+                        list.add(currentText.toString())
                         insideT = false
-                        currentText = ""
                     }
                 }
             }
@@ -456,11 +533,11 @@ class MainActivity : ComponentActivity() {
 
         var currentRow = mutableListOf<String>()
         var isSharedString = false
-        var currentCellText = ""
+        val currentCellText = StringBuilder()
         var insideValue = false
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
-            val name = parser.name
+            val name = parser.name?.substringAfter(':') // Bỏ qua tiền tố Namespace (nếu có)
             when (eventType) {
                 XmlPullParser.START_TAG -> {
                     if (name == "row") {
@@ -468,6 +545,7 @@ class MainActivity : ComponentActivity() {
                     } else if (name == "c") {
                         val typeAttr = parser.getAttributeValue(null, "t")
                         isSharedString = typeAttr == "s"
+                        currentCellText.setLength(0)
                     } else if (name == "v") {
                         insideValue = true
                     }
@@ -475,15 +553,15 @@ class MainActivity : ComponentActivity() {
                 XmlPullParser.TEXT -> {
                     if (insideValue) {
                         val rawVal = parser.text
-                        currentCellText = if (isSharedString) {
+                        if (isSharedString) {
                             val idx = rawVal.toIntOrNull()
                             if (idx != null && idx >= 0 && idx < sharedStrings.size) {
-                                sharedStrings[idx]
+                                currentCellText.append(sharedStrings[idx])
                             } else {
-                                rawVal
+                                currentCellText.append(rawVal)
                             }
                         } else {
-                            rawVal
+                            currentCellText.append(rawVal)
                         }
                     }
                 }
@@ -491,11 +569,11 @@ class MainActivity : ComponentActivity() {
                     if (name == "v") {
                         insideValue = false
                     } else if (name == "c") {
-                        currentRow.add(currentCellText)
-                        currentCellText = ""
-                        isSharedString = false
+                        currentRow.add(currentCellText.toString())
                     } else if (name == "row") {
-                        rows.add(currentRow)
+                        if (currentRow.isNotEmpty()) {
+                            rows.add(currentRow)
+                        }
                     }
                 }
             }
