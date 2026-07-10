@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -80,6 +81,62 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Bộ bắt lỗi crash: Nếu mở lại app sau khi văng, hiển thị màn hình lỗi đỏ
+        val crashFile = File(cacheDir, "crash.txt")
+        if (crashFile.exists()) {
+            val crashText = try { crashFile.readText() } catch(e: Exception) { "Không thể đọc log" }
+            setContent {
+                MaterialTheme(colorScheme = darkColorScheme(background = Color(0xFF121212))) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Ứng dụng bị lỗi (Crash Log):",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = crashText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.LightGray
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = {
+                                    crashFile.delete()
+                                    currentScreen = Screen.Main
+                                    recreate()
+                                }
+                            ) {
+                                Text("Bỏ qua & Quay lại màn hình chính")
+                            }
+                        }
+                    }
+                }
+            }
+            return
+        }
+
+        // Thiết lập bộ ghi nhận lỗi crash hệ thống
+        Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
+            try {
+                val file = File(cacheDir, "crash.txt")
+                file.writeText(throwable.stackTraceToString())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            android.os.Process.killProcess(android.os.Process.myPid())
+            System.exit(10)
+        }
 
         val options = GmsDocumentScannerOptions.Builder()
             .setScannerMode(SCANNER_MODE_FULL)
