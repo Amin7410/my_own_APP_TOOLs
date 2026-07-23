@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
     private var currentScreen by mutableStateOf<Screen>(Screen.Main)
     private var scannedPdfUri by mutableStateOf<Uri?>(null)
     private var scannedPageCount by mutableStateOf(0)
+    private var tempPdfUriToSave: Uri? = null
 
     private val scannerLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -192,6 +193,23 @@ class MainActivity : ComponentActivity() {
             uri?.let { onOpenExcel(it) }
         }
 
+        val createDocumentLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/pdf")
+        ) { targetUri: Uri? ->
+            if (targetUri != null && tempPdfUriToSave != null) {
+                try {
+                    contentResolver.openInputStream(tempPdfUriToSave!!)?.use { input ->
+                        contentResolver.openOutputStream(targetUri)?.use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Toast.makeText(this@MainActivity, "Đã lưu tài liệu thành công!", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this@MainActivity, "Lỗi lưu file: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -267,14 +285,33 @@ class MainActivity : ComponentActivity() {
                         Text(text = "Tài liệu vừa quét: $scannedPageCount trang", style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            modifier = Modifier.fillMaxWidth()
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Button(onClick = { onOpenPdf(uri) }) {
-                                Text("Xem PDF")
+                            Button(
+                                onClick = { onOpenPdf(uri) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            ) {
+                                Text("Xem PDF", fontSize = 12.sp)
                             }
-                            OutlinedButton(onClick = { sharePdf(uri) }) {
-                                Text("Chia sẻ")
+                            Button(
+                                onClick = {
+                                    tempPdfUriToSave = uri
+                                    createDocumentLauncher.launch("Tai_lieu_quet_${System.currentTimeMillis()}.pdf")
+                                },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            ) {
+                                Text("Lưu PDF", fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { sharePdf(uri) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                            ) {
+                                Text("Chia sẻ", fontSize = 12.sp)
                             }
                         }
                     }
