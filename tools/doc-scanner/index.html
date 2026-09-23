@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a">
-  <title>Document Scanner - Mobile</title>
+  <meta name="theme-color" content="#080d1a">
+  <title>Document Scanner</title>
   <link rel="stylesheet" href="../../core/css/shell.css">
   <link rel="stylesheet" href="./style.css">
   <!-- jsPDF & JSZip CDN -->
@@ -14,125 +14,188 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-  <!-- Header trên cùng chuẩn Safe Area iPhone/Android -->
+  <!-- Navigation Bar chuẩn iOS App -->
   <header class="app-navbar">
     <div class="app-navbar-left">
-      <a href="../../index.html" class="back-link">← Tools</a>
-      <span class="app-tool-title">Document Scanner</span>
+      <a href="../../index.html" class="icon-btn-back" title="Quay lại">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+      <h1 class="app-tool-title">Quét tài liệu</h1>
     </div>
     <div class="app-navbar-actions">
-      <button class="btn btn-danger" id="btnClear" style="display:none; padding: 4px 10px; min-height: 36px; font-size: 0.8rem;">Xóa hết</button>
+      <button class="btn-danger-text" id="btnClear" style="display: none;">Xóa hết</button>
     </div>
   </header>
 
-  <!-- Workspace chính -->
+  <!-- Workspace chính tràn màn hình -->
   <main class="app-workspace">
-    <!-- Card Tên tài liệu & Nút chụp nhanh -->
-    <div class="mobile-top-card">
-      <div class="filename-row">
-        <label for="fileNameInput" class="filename-label">Tên file:</label>
-        <input type="text" id="fileNameInput" class="filename-input" placeholder="Tên tài liệu..." value="Scan_Tai_Lieu">
+    <!-- Card Đặt tên tài liệu -->
+    <div class="doc-name-card">
+      <div class="doc-name-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
       </div>
+      <input type="text" id="fileNameInput" class="doc-name-input" placeholder="Tên tài liệu..." value="Scan_Tai_Lieu">
+    </div>
 
-      <!-- 3 nút bấm kích thước lớn dễ chạm ngón tay cái -->
-      <div class="capture-actions-grid">
-        <!-- Chụp nhanh qua Camera hệ thống (iOS Camera & Android Camera) -->
-        <label class="btn btn-primary btn-icon-label" style="cursor: pointer;">
-          <span class="icon">📷</span>
-          <span>Chụp 1 ảnh</span>
-          <input type="file" id="camInput" accept="image/*" capture="environment" style="display: none;">
-        </label>
+    <!-- Khối nút thao tác phân cấp rõ ràng -->
+    <div class="capture-section">
+      <!-- Nút Hero chụp ảnh to bản -->
+      <label class="btn-hero-capture">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span>Chụp tài liệu mới</span>
+        <input type="file" id="camInput" accept="image/*" capture="environment" style="display: none;">
+      </label>
 
-        <!-- Chọn nhiều ảnh đã chụp sẵn trong thư viện ảnh -->
-        <label class="btn btn-icon-label" style="cursor: pointer;">
-          <span class="icon">🖼️</span>
-          <span>Chọn từ máy</span>
+      <!-- Hàng nút phụ 2 bên cân đối -->
+      <div class="capture-secondary-row">
+        <label class="btn-sub-capture">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span>Thư viện ảnh</span>
           <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
         </label>
 
-        <!-- Chụp liên tục qua camera web không cần thoát màn hình -->
-        <button class="btn btn-icon-label btn-batch-cam" id="btnBatchCam">
-          <span class="icon">📸</span>
+        <button class="btn-sub-capture" id="btnBatchCam">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
           <span>Chụp liên tục</span>
         </button>
       </div>
     </div>
 
-    <!-- Dropzone kéo thả ảnh -->
-    <div class="app-dropzone" id="dropZone">
-      Chưa có trang nào.<br>
-      Bấm <strong>📷 Chụp 1 ảnh</strong> hoặc <strong>🖼️ Chọn từ máy</strong> để bắt đầu quét tài liệu.
+    <!-- Empty State khi chưa có trang nào -->
+    <div class="empty-scanner-state" id="dropZone">
+      <div class="scanner-laser-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 7V4h3"/>
+          <path d="M20 7V4h-3"/>
+          <path d="M4 17v3h3"/>
+          <path d="M20 17v3h-3"/>
+          <line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+      <h3 class="empty-title">Chưa có bản quét nào</h3>
+      <p class="empty-desc">Bấm nút chụp phía trên hoặc kéo thả ảnh vào đây để bắt đầu tạo tài liệu</p>
     </div>
 
-    <!-- Lưới 2 cột hiển thị các trang -->
+    <!-- Lưới hiển thị các trang -->
     <div class="scanner-grid" id="grid"></div>
   </main>
 
-  <!-- Thanh thao tác cố định ở đáy ngón tay cái (Mobile Bottom Bar) -->
-  <footer class="scanner-bottom-bar" id="bottomBar">
-    <button class="btn btn-primary btn-export-main" id="btnExportPdf">
-      Xuất / Chia sẻ PDF (<span class="export-count">0</span>)
+  <!-- Bottom Floating Action Bar cố định đáy ngón tay cái -->
+  <footer class="app-bottom-bar" id="bottomBar" style="display: none;">
+    <button class="btn btn-primary" id="btnExportPdf" style="flex: 1; min-height: 50px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/>
+        <polyline points="9 15 12 18 15 15"/>
+      </svg>
+      <span>Xuất / Chia sẻ PDF (<span class="export-count">0</span>)</span>
     </button>
-    <button class="btn btn-export-secondary" id="btnMoreOptions" title="Các định dạng khác">
-      •••
+
+    <button class="btn btn-secondary" id="btnMoreOptions" style="width: 50px; min-height: 50px; padding: 0; border-radius: 14px;" title="Tùy chọn khác">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="1"/>
+        <circle cx="19" cy="12" r="1"/>
+        <circle cx="5" cy="12" r="1"/>
+      </svg>
     </button>
   </footer>
 
-  <!-- ================= POPUP TÙY CHỌN XUẤT PHỤ (ZIP, ẢNH) ================= -->
-  <div class="modal-backdrop" id="optionsModal">
-    <div class="modal-content" style="max-width: 360px; margin: auto; padding: 16px; border-radius: 16px;">
-      <h3 style="font-size: 1rem; margin-bottom: 12px; color: #fff;">Định dạng xuất khác</h3>
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn" id="btnExportZip" style="justify-content: flex-start; min-height: 48px;">
-          📦 Tải file nén ZIP (Tất cả ảnh)
-        </button>
-        <button class="btn" id="btnExportImages" style="justify-content: flex-start; min-height: 48px;">
-          🖼️ Tải từng ảnh rời (.JPG)
-        </button>
-        <button class="btn" id="btnCloseOptions" style="margin-top: 8px;">
-          Đóng
-        </button>
-      </div>
+  <!-- ================= POPUP BOTTOM SHEET CHO TÙY CHỌN KHÁC ================= -->
+  <div class="sheet-backdrop" id="optionsModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <h3 class="sheet-title">Tùy chọn xuất file</h3>
+      
+      <button class="btn btn-secondary" id="btnExportZip" style="justify-content: flex-start; gap: 12px; min-height: 50px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="21 8 21 21 3 21 3 8"/>
+          <rect x="1" y="3" width="22" height="5"/>
+          <line x1="10" y1="12" x2="14" y2="12"/>
+        </svg>
+        <span>Tải file nén ZIP (Tất cả ảnh)</span>
+      </button>
+
+      <button class="btn btn-secondary" id="btnExportImages" style="justify-content: flex-start; gap: 12px; min-height: 50px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span>Tải từng ảnh rời (.JPG)</span>
+      </button>
+
+      <button class="btn" id="btnCloseOptions" style="margin-top: 4px; min-height: 46px; color: var(--text-secondary);">
+        Đóng
+      </button>
     </div>
   </div>
 
-  <!-- ================= MODAL CHỈNH SỬA TRANG (FULL-SCREEN MOBILE SHEET) ================= -->
+  <!-- ================= FULLSCREEN MOBILE MODAL EDITOR ================= -->
   <div class="modal-backdrop" id="editorModal">
     <div class="modal-mobile-fullscreen">
-      <!-- Navbar của Editor -->
       <div class="modal-nav">
-        <button class="btn" id="btnEditorCancel" style="border:none; background:transparent; color:#94a3b8; font-size:0.95rem; min-height:36px; padding:4px 8px;">Hủy</button>
+        <button class="modal-nav-btn" id="btnEditorCancel">Hủy</button>
         <span class="modal-nav-title" id="editorModalTitle">Sửa trang 1</span>
-        <button class="btn btn-primary" id="btnEditorSave" style="min-height:36px; padding:6px 14px; font-size:0.9rem;">Xong</button>
+        <button class="modal-nav-btn primary" id="btnEditorSave">Xong</button>
       </div>
 
-      <!-- Vùng hiển thị Canvas tài liệu -->
       <div class="editor-canvas-container">
         <canvas id="editorCanvas"></canvas>
       </div>
 
-      <!-- Bộ công cụ điều khiển ở vùng ngón tay cái -->
       <div class="editor-bottom-tools">
-        <!-- Danh sách Pill bộ lọc cuộn ngang -->
-        <div class="filter-pill-list">
-          <button class="filter-pill active" data-filter="magic">Màu tài liệu</button>
-          <button class="filter-pill" data-filter="bw">Trắng đen</button>
-          <button class="filter-pill" data-filter="grayscale">Thang xám</button>
-          <button class="filter-pill" data-filter="original">Ảnh gốc</button>
+        <!-- Segmented Controls chọn bộ lọc -->
+        <div class="segmented-filters">
+          <button class="segmented-filter-btn active" data-filter="magic">Màu nét</button>
+          <button class="segmented-filter-btn" data-filter="bw">Trắng đen</button>
+          <button class="segmented-filter-btn" data-filter="grayscale">Thang xám</button>
+          <button class="segmented-filter-btn" data-filter="original">Gốc</button>
         </div>
 
-        <!-- Nút xoay 90 độ -->
+        <!-- Hàng nút xoay -->
         <div class="rotate-actions">
-          <button class="btn" id="btnRotateLeft">↶ Xoay trái</button>
-          <button class="btn" id="btnRotateRight">↷ Xoay phải</button>
+          <button class="btn btn-secondary" id="btnRotateLeft">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            <span>Xoay trái</span>
+          </button>
+
+          <button class="btn btn-secondary" id="btnRotateRight">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+            </svg>
+            <span>Xoay phải</span>
+          </button>
         </div>
 
-        <!-- Thanh trượt điều chỉnh sáng / tương phản / ngưỡng -->
+        <!-- Sliders -->
         <div class="sliders-panel">
           <div class="touch-slider-row">
             <div class="slider-header">
               <span>Độ sáng</span>
-              <span id="valBrightness">0</span>
+              <span id="valBrightness" style="font-weight: 700; color: #fff;">0</span>
             </div>
             <input type="range" id="sliderBrightness" class="touch-range-input" min="-80" max="80" value="0">
           </div>
@@ -140,15 +203,15 @@
           <div class="touch-slider-row">
             <div class="slider-header">
               <span>Độ tương phản</span>
-              <span id="valContrast">0</span>
+              <span id="valContrast" style="font-weight: 700; color: #fff;">0</span>
             </div>
             <input type="range" id="sliderContrast" class="touch-range-input" min="-60" max="60" value="0">
           </div>
 
           <div class="touch-slider-row" id="thresholdGroup" style="display: none;">
             <div class="slider-header">
-              <span>Ngưỡng tách mực</span>
-              <span id="valThreshold">135</span>
+              <span>Ngưỡng tách nét</span>
+              <span id="valThreshold" style="font-weight: 700; color: #fff;">135</span>
             </div>
             <input type="range" id="sliderThreshold" class="touch-range-input" min="60" max="210" value="135">
           </div>
@@ -160,11 +223,11 @@
   <!-- ================= BATCH CAMERA TOÀN MÀN HÌNH ================= -->
   <div class="camera-fullscreen-view" id="cameraModal">
     <div class="camera-top-hud">
-      <button class="btn" id="btnCameraClose" style="background: rgba(0,0,0,0.6); border:none; color:#fff; min-height:36px; padding:6px 12px;">Đóng</button>
+      <button class="btn btn-secondary" id="btnCameraClose" style="min-height: 38px; padding: 6px 14px; font-size: 0.85rem; border-radius: 20px;">Đóng</button>
       <div class="camera-counter-badge">
         Đã chụp: <span id="cameraBatchCount">0</span> trang
       </div>
-      <button class="btn btn-primary" id="btnCameraFinish" style="min-height:36px; padding:6px 14px; font-size:0.85rem;">Xong</button>
+      <button class="btn btn-primary" id="btnCameraFinish" style="min-height: 38px; padding: 6px 16px; font-size: 0.85rem; border-radius: 20px;">Hoàn tất</button>
     </div>
 
     <div class="camera-feed-box">
@@ -172,9 +235,7 @@
     </div>
 
     <div class="camera-bottom-hud">
-      <div style="width: 50px;"></div>
       <button class="camera-shutter-large" id="btnShutter" title="Chụp trang"></button>
-      <div style="width: 50px;"></div>
     </div>
   </div>
 

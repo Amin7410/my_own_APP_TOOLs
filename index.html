@@ -5,17 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a">
-  <title>My Tools</title>
+  <meta name="theme-color" content="#080d1a">
+  <title>My Web Tools</title>
   <link rel="stylesheet" href="./css/hub.css">
 </head>
 <body>
   <div class="hub-container">
     <header class="hub-header">
-      <h1 class="hub-title">My Tools</h1>
+      <h1 class="hub-title">Tiện ích của tôi</h1>
+      <p class="hub-subtitle">Bộ công cụ cá nhân siêu nhẹ & bảo mật</p>
     </header>
 
-    <input type="text" id="searchInput" class="hub-search" placeholder="Tìm tool..." autocomplete="off">
+    <div class="hub-search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" class="hub-search" placeholder="Tìm kiếm công cụ..." autocomplete="off">
+    </div>
 
     <main class="tool-list" id="toolList"></main>
   </div>
@@ -28,26 +35,31 @@
 
     function render(query = '') {
       toolList.innerHTML = '';
-      const filtered = TOOL_REGISTRY.filter(t => t.name.toLowerCase().includes(query.toLowerCase()));
+      const filtered = TOOL_REGISTRY.filter(t => 
+        t.name.toLowerCase().includes(query.toLowerCase()) || 
+        (t.subtitle && t.subtitle.toLowerCase().includes(query.toLowerCase()))
+      );
 
       filtered.forEach(tool => {
         const a = document.createElement('a');
         a.href = tool.path;
-        a.className = 'tool-row';
+        a.className = 'tool-card-row';
         a.innerHTML = `
-          <span>${tool.name}</span>
-          <span class="tool-arrow">→</span>
+          <div class="tool-icon-avatar" style="background: ${tool.bgColor}; color: ${tool.iconColor};">
+            ${tool.icon}
+          </div>
+          <div class="tool-card-info">
+            <div class="tool-card-title">${tool.name}</div>
+            <div class="tool-card-desc">${tool.subtitle || ''}</div>
+          </div>
+          <div class="tool-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
         `;
         toolList.appendChild(a);
       });
-
-      const addBtn = document.createElement('div');
-      addBtn.className = 'tool-row add-tool-btn';
-      addBtn.textContent = '+ Thêm tool mới';
-      addBtn.onclick = () => {
-        alert('Nguyên tắc ETC:\n1. Tạo thư mục trong tools/<tên-tool>/\n2. Khai báo 1 dòng vào file config.js là xong!');
-      };
-      toolList.appendChild(addBtn);
     }
 
     searchInput.addEventListener('input', e => render(e.target.value.trim()));

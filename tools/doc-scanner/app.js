@@ -31,7 +31,7 @@ const editorModalTitle = document.getElementById('editorModalTitle');
 const editorCanvas = document.getElementById('editorCanvas');
 const btnEditorCancel = document.getElementById('btnEditorCancel');
 const btnEditorSave = document.getElementById('btnEditorSave');
-const filterButtons = document.querySelectorAll('.filter-pill');
+const filterButtons = document.querySelectorAll('.segmented-filter-btn');
 const btnRotateLeft = document.getElementById('btnRotateLeft');
 const btnRotateRight = document.getElementById('btnRotateRight');
 const sliderBrightness = document.getElementById('sliderBrightness');
@@ -124,11 +124,11 @@ function renderGrid() {
 
   if (total > 0) {
     dropZone.style.display = 'none';
-    bottomBar.classList.add('active');
-    btnClear.style.display = 'inline-flex';
+    bottomBar.style.display = 'flex';
+    btnClear.style.display = 'inline-block';
   } else {
-    dropZone.style.display = 'block';
-    bottomBar.classList.remove('active');
+    dropZone.style.display = 'flex';
+    bottomBar.style.display = 'none';
     btnClear.style.display = 'none';
   }
 
@@ -146,16 +146,22 @@ function renderGrid() {
 
     card.innerHTML = `
       <div class="page-preview-box" data-action="edit">
-        <span class="page-filter-badge">${filterNameMap[page.settings.filterType] || 'Màu nét'}</span>
+        <span class="page-number-pill">Trang ${index + 1}</span>
+        <span class="page-filter-pill">${filterNameMap[page.settings.filterType] || 'Màu nét'}</span>
         <img src="${page.processedDataUrl}" alt="Trang ${index + 1}">
-        <span class="page-edit-hint">Sửa</span>
       </div>
       <div class="page-card-footer">
-        <span style="font-weight: 700; color: #fff;">Trang ${index + 1}</span>
-        <div class="page-order-btns">
-          <button class="btn-touch-small" data-action="move-up" title="Lên" ${index === 0 ? 'disabled' : ''}>▲</button>
-          <button class="btn-touch-small" data-action="move-down" title="Xuống" ${index === total - 1 ? 'disabled' : ''}>▼</button>
-          <button class="btn-touch-small" data-action="delete" style="color: #ef4444;" title="Xóa">✕</button>
+        <span class="page-edit-tap-text">Chạm để sửa</span>
+        <div class="page-actions-inline">
+          <button class="icon-action-btn" data-action="move-up" title="Lên" ${index === 0 ? 'disabled' : ''}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="icon-action-btn" data-action="move-down" title="Xuống" ${index === total - 1 ? 'disabled' : ''}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button class="icon-action-btn btn-delete" data-action="delete" title="Xóa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       </div>
     `;
@@ -322,7 +328,7 @@ btnBatchCam.onclick = async () => {
     cameraVideo.srcObject = cameraMediaStream;
     cameraModal.classList.add('active');
   } catch (err) {
-    alert('Không thể mở camera web: ' + err.message + '\nBạn hãy dùng nút "📷 Chụp 1 ảnh" của máy nhé.');
+    alert('Không thể mở camera web: ' + err.message + '\nBạn hãy dùng nút "Chụp tài liệu mới" của máy nhé.');
   }
 };
 
@@ -434,7 +440,6 @@ btnExportPdf.onclick = async () => {
         });
         return;
       } catch (shareErr) {
-        // Người dùng ấn Hủy chia sẻ hoặc lỗi -> chuyển sang tải về thông thường
         if (shareErr.name === 'AbortError') return;
       }
     }

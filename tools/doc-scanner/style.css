@@ -1,192 +1,314 @@
-/* style.css - Giao diện tối ưu di động (iPhone 12, Redmi Note 9S & màn hình nhỏ) */
+/* tools/doc-scanner/style.css - Giao diện đẳng cấp App trên iPhone & Android */
 
-/* Thanh điều khiển trên cùng (Tên file & Nút chụp) */
-.mobile-top-card {
-  background: var(--bg-surface);
+/* Khối nhập tên tài liệu */
+.doc-name-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.doc-name-card:focus-within {
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 3px var(--border-focus-glow);
+}
+
+.doc-name-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.doc-name-input {
+  flex: 1;
+  background: transparent;
+  color: #fff;
+  font-size: 16px; /* Chống zoom trên Safari iOS */
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.doc-name-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Khối nút bấm thao tác (Phân cấp thị giác rõ ràng) */
+.capture-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
-.filename-row {
+/* Nút Hero chụp ảnh chính */
+.btn-hero-capture {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-gradient);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
 }
 
-.filename-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  font-weight: 500;
+.btn-hero-capture:active {
+  transform: scale(0.97);
 }
 
-.filename-input {
-  flex: 1;
-  background: var(--bg-app);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  color: #fff;
-  font-size: 16px; /* Chống auto-zoom trên iOS */
-  min-height: 42px;
-  outline: none;
+.btn-hero-capture svg {
+  width: 22px;
+  height: 22px;
 }
 
-.filename-input:focus {
-  border-color: var(--border-active);
-}
-
-/* Các nút chụp ảnh tối ưu thao tác ngón cái */
-.capture-actions-grid {
+/* Hàng nút phụ 2 bên cân xứng 50% - 50% */
+.capture-secondary-row {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-sub-capture {
+  min-height: 46px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
 }
 
-@media (max-width: 480px) {
-  .capture-actions-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .btn-batch-cam {
-    grid-column: span 2;
-  }
+.btn-sub-capture:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.97);
 }
 
-.btn-icon-label {
+.btn-sub-capture svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+}
+
+/* ================= TRẠNG THÁI TRỐNG (EMPTY STATE MINH HỌA) ================= */
+.empty-scanner-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 40px 20px;
   text-align: center;
-  padding: 8px 6px;
-  min-height: 52px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.2;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  background: rgba(17, 24, 39, 0.35);
+  margin-top: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.btn-icon-label span.icon {
-  font-size: 1.2rem;
-  margin-bottom: 2px;
+.empty-scanner-state:active {
+  border-color: var(--border-active);
+  background: rgba(14, 165, 233, 0.05);
 }
 
-/* Lưới hiển thị các trang tài liệu (2 cột chuẩn cho điện thoại) */
+.scanner-laser-box {
+  width: 76px;
+  height: 76px;
+  border-radius: 20px;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--color-primary);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+  position: relative;
+}
+
+.scanner-laser-box svg {
+  width: 36px;
+  height: 36px;
+}
+
+.empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.empty-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  max-width: 260px;
+  line-height: 1.4;
+}
+
+/* ================= LƯỚI TRANG TÀI LIỆU (2 CỘT CHUẨN ĐIỆN THOẠI) ================= */
 .scanner-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  padding-bottom: 16px;
 }
 
 @media (min-width: 640px) {
   .scanner-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
 .page-card {
-  background: var(--bg-surface);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
   position: relative;
+  transition: transform 0.15s, border-color 0.15s;
 }
 
 .page-card:active {
+  transform: scale(0.98);
   border-color: var(--border-active);
 }
 
 .page-preview-box {
   width: 100%;
-  height: 190px;
+  height: 205px;
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .page-preview-box img {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  padding: 4px;
 }
 
-.page-filter-badge {
+/* Badge số thứ tự trang */
+.page-number-pill {
   position: absolute;
-  top: 6px;
-  left: 6px;
-  background: rgba(15, 23, 42, 0.88);
+  top: 8px;
+  left: 8px;
+  background: rgba(11, 17, 32, 0.85);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+/* Badge tên bộ lọc */
+.page-filter-pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(14, 165, 233, 0.2);
   color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.4);
   font-size: 0.7rem;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  backdrop-filter: blur(8px);
 }
 
-.page-edit-hint {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.75);
-  color: #fff;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
+/* Footer thẻ trang: các nút chỉnh thứ tự & xóa */
 .page-card-footer {
-  padding: 6px 8px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--border-subtle);
-  font-size: 0.8rem;
-  background: var(--bg-surface);
+  background: rgba(17, 24, 39, 0.95);
 }
 
-.page-order-btns {
+.page-edit-tap-text {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.page-actions-inline {
   display: flex;
   gap: 4px;
 }
 
-.btn-touch-small {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+.icon-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.8rem;
+  transition: all 0.1s;
 }
 
-.btn-touch-small:active {
-  background: var(--bg-surface-hover);
+.icon-action-btn:active {
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
-/* ================= MODAL EDITOR CHUẨN FULL-SCREEN CHO MOBILE ================= */
+.icon-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.icon-action-btn.btn-delete {
+  color: var(--color-danger);
+}
+
+.icon-action-btn.btn-delete:active {
+  background: rgba(244, 63, 94, 0.2);
+}
+
+/* ================= FULLSCREEN MOBILE MODAL EDITOR ================= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: #000;
   display: none;
   z-index: 1000;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .modal-backdrop.active {
@@ -200,107 +322,112 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Thanh điều hướng của Modal trên điện thoại */
+/* Thanh điều hướng Editor kiểu iOS */
 .modal-nav {
   height: 52px;
-  background: var(--bg-surface);
+  background: rgba(17, 24, 39, 0.95);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 16px;
   flex-shrink: 0;
+  backdrop-filter: blur(16px);
 }
 
 .modal-nav-title {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #fff;
+}
+
+.modal-nav-btn {
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.modal-nav-btn.primary {
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 /* Vùng hiển thị Canvas */
 .editor-canvas-container {
   flex: 1;
-  background: #020617;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 12px;
   overflow: hidden;
-  min-height: 200px;
 }
 
 .editor-canvas-container canvas {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
   border-radius: 4px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
 }
 
-/* Thanh công cụ chỉnh sửa phía dưới (Thumb zone) */
+/* Bảng công cụ phía dưới ngón tay cái */
 .editor-bottom-tools {
-  background: var(--bg-surface);
+  background: rgba(17, 24, 39, 0.96);
   border-top: 1px solid var(--border-subtle);
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  backdrop-filter: blur(20px);
   flex-shrink: 0;
-  max-height: 48vh;
-  overflow-y: auto;
 }
 
-.filter-pill-list {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.filter-pill {
-  flex: 1;
-  min-width: 80px;
-  min-height: 42px;
-  padding: 8px 10px;
-  border-radius: 20px;
-  background: var(--bg-app);
+/* Segmented Control chọn bộ lọc */
+.segmented-filters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 4px;
+}
+
+.segmented-filter-btn {
+  padding: 10px 4px;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
-  white-space: nowrap;
+  border-radius: 10px;
+  color: var(--text-secondary);
   cursor: pointer;
+  transition: all 0.15s;
 }
 
-.filter-pill:active {
-  background: var(--bg-surface-hover);
+.segmented-filter-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
 }
 
-.filter-pill.active {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: var(--border-active);
-  color: #38bdf8;
-}
-
+/* Hàng nút Xoay */
 .rotate-actions {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .rotate-actions .btn {
-  flex: 1;
-  min-height: 40px;
-  font-size: 0.85rem;
+  min-height: 42px;
+  font-size: 0.88rem;
 }
 
-/* Thanh trượt điều chỉnh */
+/* Sliders */
 .sliders-panel {
   display: flex;
   flex-direction: column;
@@ -317,14 +444,14 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.82rem;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
 .touch-range-input {
   width: 100%;
-  height: 28px;
+  height: 24px;
   accent-color: var(--color-primary);
-  cursor: pointer;
 }
 
 /* ================= BATCH CAMERA TOÀN MÀN HÌNH ================= */
@@ -348,27 +475,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 12px 18px;
   z-index: 10;
 }
 
 .camera-counter-badge {
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.7);
   color: #38bdf8;
   padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
   font-weight: 700;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 .camera-feed-box {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .camera-feed-video {
@@ -380,20 +508,18 @@
 .camera-bottom-hud {
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  padding: 16px 24px;
+  justify-content: center;
+  padding: 20px;
   z-index: 10;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
 }
 
-/* Nút chụp tròn to phong cách iPhone Camera */
 .camera-shutter-large {
-  width: 74px;
-  height: 74px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: #fff;
-  border: 4px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+  border: 4px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
   cursor: pointer;
   transition: transform 0.1s;
 }
@@ -403,38 +529,52 @@
   background: #38bdf8;
 }
 
-/* ================= BOTTOM BAR TỐI ƯU MOBILE ================= */
-.scanner-bottom-bar {
+/* ================= POPUP BOTTOM SHEET CHO TÙY CHỌN KHÁC ================= */
+.sheet-backdrop {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-subtle);
-  padding: 10px 14px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
   display: none;
-  align-items: center;
-  gap: 10px;
-  z-index: 90;
+  align-items: flex-end;
+  z-index: 1000;
 }
 
-.scanner-bottom-bar.active {
+.sheet-backdrop.active {
   display: flex;
 }
 
-.btn-export-main {
-  flex: 1;
-  min-height: 48px;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: var(--radius-md);
+.bottom-sheet {
+  width: 100%;
+  background: var(--bg-surface-elevated);
+  border-top: 1px solid var(--border-subtle);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  padding: 20px 16px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-export-secondary {
-  min-height: 48px;
-  padding: 0 14px;
-  font-size: 0.88rem;
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 auto 8px;
+}
+
+.sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 6px;
 }

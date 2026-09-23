@@ -1,94 +1,152 @@
+/* css/hub.css - Hub danh sách công cụ phong cách Apple / iOS */
 @import '../core/css/tokens.css';
 @import '../core/css/reset.css';
 
 body {
-  padding: 20px 16px;
-  padding-top: max(20px, env(safe-area-inset-top));
-  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  padding: 0;
+  background-color: var(--bg-app);
 }
 
 .hub-container {
-  max-width: 500px;
+  width: 100%;
+  max-width: 540px;
   margin: 0 auto;
+  padding: 16px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
 }
 
 .hub-header {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding: 0 4px;
 }
 
 .hub-title {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.hub-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.hub-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.hub-search-box:focus-within {
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 3px var(--border-focus-glow);
+}
+
+.hub-search-box svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .hub-search {
-  width: 100%;
-  padding: 12px 14px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  flex: 1;
+  background: transparent;
   color: #fff;
   font-size: 16px; /* Chống auto zoom trên iOS */
-  min-height: 46px;
   outline: none;
-  margin-bottom: 16px;
-  transition: border-color 0.15s;
 }
 
-.hub-search:focus {
-  border-color: var(--border-active);
+.hub-search::placeholder {
+  color: var(--text-muted);
 }
 
 .tool-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.tool-row {
+.tool-card-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: var(--bg-surface);
+  gap: 14px;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  font-weight: 600;
-  font-size: 1rem;
-  min-height: 54px;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.tool-row:active {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-active);
-  color: var(--border-active);
-  transform: scale(0.98);
-}
-
-.tool-arrow {
-  color: var(--text-muted);
-  font-size: 1rem;
-}
-
-.tool-row:active .tool-arrow {
-  color: var(--border-active);
-}
-
-.add-tool-btn {
-  border: 1px dashed var(--border-subtle);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.add-tool-btn:active {
-  border-color: var(--text-secondary);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  text-decoration: none;
   color: #fff;
-  background: rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.12s, border-color 0.15s, background 0.15s;
+}
+
+.tool-card-row:active {
+  transform: scale(0.98);
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+}
+
+.tool-icon-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tool-icon-avatar svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tool-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+
+.tool-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  display: flex;
+}
+
+.tool-chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tool-card-row:active .tool-chevron {
+  color: var(--color-primary);
 }
