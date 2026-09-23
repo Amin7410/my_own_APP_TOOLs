@@ -1,15 +1,75 @@
 /**
  * core/js/cv-engine.js
- * Engine thị giác máy tính (Computer Vision) thuần JavaScript siêu nhẹ (~30KB).
- * Không phụ thuộc thư viện bên ngoài. Xử lý cực nhanh trực tiếp trên iPhone 12 & Redmi Note 9S.
- * 
- * Tính năng cốt lõi:
- * 1. Tự động nhận diện 4 góc mép giấy (Auto 4-Corner Detection)
- * 2. Nắn thẳng góc nghiêng (4-Point Perspective Transform / Homography với Bilinear Interpolation)
- * 3. Khử bóng đổ & Cân bằng sáng nền (Illumination Flattening & Shadow Removal)
- * 4. Bộ lọc Magic Color chuẩn CamScanner
- * 5. Ngưỡng thích ứng Sauvola Binarization
+ * Engine thị giác máy tính tài liệu chuẩn công nghiệp (Heavy-Duty Computer Vision Engine):
+ * 1. OpenCV.js WebAssembly (Biện pháp mạnh): Canny edge, Otsu morphology, findContours, approxPolyDP & homography warp.
+ * 2. Pure JS Dual-Engine Fallback: Tự động phân ngưỡng Otsu + khối tâm giấy + cực trị góc phần tư.
+ * 3. Tối ưu cực đại cho chụp văn bản, vở học sinh, sách vở, hóa đơn trên mặt bàn gỗ / nền tối.
  */
+
+// ================= 0. KHỞI TẠO & QUẢN LÝ OPENCV.JS =================
+
+let cvReady = false;
+let cvInitPromise = null;
+
+/**
+ * Nạp động OpenCV.js WebAssembly (nếu chưa nạp)
+ * @returns {Promise<any>}
+ */
+export function loadOpenCV() {
+  if (window.cv && window.cv.Mat) {
+    cvReady = true;
+    return Promise.resolve(window.cv);
+  }
+  if (cvInitPromise) return cvInitPromise;
+
+  cvInitPromise = new Promise((resolve) => {
+    const onReady = () => {
+      cvReady = true;
+      console.log('⚡ OpenCV.js WebAssembly Engine đã sẵn sàng!');
+      window.dispatchEvent(new CustomEvent('opencv-ready'));
+      resolve(window.cv);
+    };
+
+    if (window.cv && window.cv.Mat) {
+      onReady();
+      return;
+    }
+
+    if (window.cv) {
+      window.cv['onRuntimeInitialized'] = onReady;
+    }
+
+    // Tự động kiểm tra định kỳ (phòng trường hợp cdn load async)
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts++;
+      if (window.cv && window.cv.Mat) {
+        clearInterval(timer);
+        onReady();
+      } else if (window.cv && !window.cv.onRuntimeInitialized) {
+        window.cv.onRuntimeInitialized = () => {
+          clearInterval(timer);
+          onReady();
+        };
+      }
+      if (attempts > 300) { // 15 giây timeout
+        clearInterval(timer);
+        console.warn('⚠️ OpenCV nạp quá thời gian, sử dụng Pure JS Engine.');
+        resolve(null);
+      }
+    }, 50);
+  });
+
+  return cvInitPromise;
+}
+
+/**
+ * Kiểm tra xem OpenCV.js đã sẵn sàng hay chưa
+ * @returns {boolean}
+ */
+export function isOpenCVReady() {
+  return !!(window.cv && window.cv.Mat);
+}
 
 /**
  * Tải ảnh thành HTMLImageElement
@@ -38,27 +98,230 @@ export function createCanvasFromSource(source) {
   return canvas;
 }
 
-// ================= 1. THUẬT TOÁN TỰ ĐỘNG NHẬN DIỆN 4 GÓC (AUTO CORNERS) =================
+/**
+ * Sắp xếp 4 điểm bất kỳ thành thứ tự chuẩn: tl (trên-trái), tr (trên-phải), br (dưới-phải), bl (dưới-trái)
+ * Dựa trên tổng (x+y) và hiệu (y-x) chuẩn thuật toán thị giác máy tính.
+ */
+export function orderPoints(pts) {
+  if (!pts || pts.length < 4) return null;
+
+  let tl = pts[0], br = pts[0], tr = pts[0], bl = pts[0];
+  let minSum = pts[0].x + pts[0].y;
+  let maxSum = minSum;
+  let minDiff = pts[0].y - pts[0].x;
+  let maxDiff = minDiff;
+
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i];
+    const s = p.x + p.y;
+    const d = p.y - p.x;
+
+    if (s < minSum) { minSum = s; tl = p; }
+    if (s > maxSum) { maxSum = s; br = p; }
+    if (d < minDiff) { minDiff = d; tr = p; }
+    if (d > maxDiff) { maxDiff = d; bl = p; }
+  }
+
+  return { tl, tr, br, bl };
+}
+
+// ================= 1. THUẬT TOÁN NHẬN DIỆN 4 GÓC TÀI LIỆU =================
 
 /**
- * Tự động tìm 4 góc tài liệu từ ảnh
- * @param {HTMLImageElement|HTMLCanvasElement} source
- * @returns {{tl: {x: number, y: number}, tr: {x: number, y: number}, br: {x: number, y: number}, bl: {x: number, y: number}}}
+ * Nhận diện 4 góc tài liệu bằng OpenCV.js (Biện pháp mạnh)
+ * @param {HTMLImageElement|HTMLCanvasElement} source 
+ * @returns {{tl: {x,y}, tr: {x,y}, br: {x,y}, bl: {x,y}}|null}
  */
-export function autoDetectCorners(source) {
+export function detectCornersOpenCV(source) {
+  if (!isOpenCVReady()) return null;
+  const cv = window.cv;
+
   const origW = source.naturalWidth || source.width;
   const origH = source.naturalHeight || source.height;
 
-  // Dự phòng mặc định: lùi vào 4% từ mép ảnh
+  // Thu nhỏ ảnh xuống max 600px để xử lý cực nhanh (< 25ms) trên điện thoại
+  const maxDim = 600;
+  const scale = Math.min(1, maxDim / Math.max(origW, origH));
+  const w = Math.round(origW * scale);
+  const h = Math.round(origH * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(source, 0, 0, w, h);
+
+  let src = null, gray = null, blur = null, thresh = null, edges = null, closed = null;
+  let contours = null, hierarchy = null, approx = null;
+
+  try {
+    src = cv.imread(canvas);
+    gray = new cv.Mat();
+    blur = new cv.Mat();
+    thresh = new cv.Mat();
+    edges = new cv.Mat();
+    closed = new cv.Mat();
+    contours = new cv.MatVector();
+    hierarchy = new cv.Mat();
+    approx = new cv.Mat();
+
+    // 1. Grayscale & GaussianBlur làm mượt nhiễu hạt
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+
+    // 2. Phân ngưỡng tự động Otsu để bóc tách giấy trắng ra khỏi mặt bàn
+    cv.threshold(blur, thresh, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+
+    // Kiểm tra cực tính viền ảnh: nếu viền sáng hơn (giấy sẫm màu trên bàn sáng), đảo ngược
+    let borderBright = 0, totalBorder = 0;
+    const threshData = thresh.data;
+    for (let x = 0; x < w; x += 4) {
+      if (threshData[x] > 128) borderBright++;
+      if (threshData[(h - 1) * w + x] > 128) borderBright++;
+      totalBorder += 2;
+    }
+    for (let y = 0; y < h; y += 4) {
+      if (threshData[y * w] > 128) borderBright++;
+      if (threshData[y * w + (w - 1)] > 128) borderBright++;
+      totalBorder += 2;
+    }
+    if (borderBright / totalBorder > 0.5) {
+      cv.bitwise_not(thresh, thresh);
+    }
+
+    // Phép đóng hình thái học (Morphological Close) để hàn gắn các đường đứt đoạn
+    const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(7, 7));
+    cv.morphologyEx(thresh, closed, cv.MORPH_CLOSE, kernel);
+
+    // Tìm tất cả các đường bao (Contours)
+    cv.findContours(closed, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+    let maxContour = null;
+    let maxArea = 0;
+    const minArea = (w * h) * 0.10; // Tài liệu phải chiếm tối thiểu 10% khung hình
+    const maxAreaLimit = (w * h) * 0.95; // Bỏ qua viền ngoài cùng khung ảnh
+
+    for (let i = 0; i < contours.size(); i++) {
+      const cnt = contours.get(i);
+      const a = cv.contourArea(cnt);
+      if (a > maxArea && a >= minArea && a <= maxAreaLimit) {
+        maxArea = a;
+        maxContour = cnt;
+      }
+    }
+
+    // Nếu Otsu chưa bắt được, kích hoạt phương án phụ Canny edge detection
+    if (!maxContour) {
+      cv.Canny(blur, edges, 50, 150);
+      cv.morphologyEx(edges, closed, cv.MORPH_CLOSE, kernel);
+      contours.delete();
+      hierarchy.delete();
+      contours = new cv.MatVector();
+      hierarchy = new cv.Mat();
+      cv.findContours(closed, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+      for (let i = 0; i < contours.size(); i++) {
+        const cnt = contours.get(i);
+        const a = cv.contourArea(cnt);
+        if (a > maxArea && a >= minArea && a <= maxAreaLimit) {
+          maxArea = a;
+          maxContour = cnt;
+        }
+      }
+    }
+    kernel.delete();
+
+    if (!maxContour) return null;
+
+    let corners = null;
+    const peri = cv.arcLength(maxContour, true);
+
+    // 3. Thử xấp xỉ đa giác 4 đỉnh (approxPolyDP)
+    const epsilons = [0.02, 0.03, 0.04, 0.015, 0.05];
+    for (const eps of epsilons) {
+      cv.approxPolyDP(maxContour, approx, eps * peri, true);
+      if (approx.rows === 4 && cv.isContourConvex(approx)) {
+        const pts = [];
+        for (let i = 0; i < 4; i++) {
+          pts.push({
+            x: approx.data32S[i * 2],
+            y: approx.data32S[i * 2 + 1]
+          });
+        }
+        corners = orderPoints(pts);
+        break;
+      }
+    }
+
+    // 4. Nếu tài liệu bị cong mép/gáy sách (không ra đúng 4 đỉnh), dùng thuật toán 4 góc phần tư từ tâm (minAreaRect)
+    if (!corners) {
+      const rect = cv.minAreaRect(maxContour);
+      const center = rect.center;
+      let tl = null, tr = null, bl = null, br = null;
+      let maxDistTL = 0, maxDistTR = 0, maxDistBL = 0, maxDistBR = 0;
+
+      for (let i = 0; i < maxContour.data32S.length; i += 2) {
+        const pt = { x: maxContour.data32S[i], y: maxContour.data32S[i + 1] };
+        const d = (pt.x - center.x) ** 2 + (pt.y - center.y) ** 2;
+
+        if (pt.x <= center.x && pt.y <= center.y) {
+          if (d > maxDistTL) { maxDistTL = d; tl = pt; }
+        } else if (pt.x >= center.x && pt.y <= center.y) {
+          if (d > maxDistTR) { maxDistTR = d; tr = pt; }
+        } else if (pt.x <= center.x && pt.y >= center.y) {
+          if (d > maxDistBL) { maxDistBL = d; bl = pt; }
+        } else if (pt.x >= center.x && pt.y >= center.y) {
+          if (d > maxDistBR) { maxDistBR = d; br = pt; }
+        }
+      }
+
+      if (tl && tr && br && bl) {
+        corners = orderPoints([tl, tr, br, bl]);
+      }
+    }
+
+    if (!corners) return null;
+
+    // Quy đổi tọa độ về kích thước ảnh gốc
+    return {
+      tl: { x: Math.round(corners.tl.x / scale), y: Math.round(corners.tl.y / scale) },
+      tr: { x: Math.round(corners.tr.x / scale), y: Math.round(corners.tr.y / scale) },
+      br: { x: Math.round(corners.br.x / scale), y: Math.round(corners.br.y / scale) },
+      bl: { x: Math.round(corners.bl.x / scale), y: Math.round(corners.bl.y / scale) }
+    };
+
+  } catch (err) {
+    console.warn('Lỗi OpenCV detectCorners:', err);
+    return null;
+  } finally {
+    if (src) src.delete();
+    if (gray) gray.delete();
+    if (blur) blur.delete();
+    if (thresh) thresh.delete();
+    if (edges) edges.delete();
+    if (closed) closed.delete();
+    if (contours) contours.delete();
+    if (hierarchy) hierarchy.delete();
+    if (approx) approx.delete();
+  }
+}
+
+/**
+ * Thuật toán Pure JavaScript nâng cao (chạy khi OpenCV chưa kịp tải xong hoặc ngoại tuyến)
+ * Sử dụng bóc tách Otsu và tìm khối tâm tài liệu, không bao giờ lấy nhầm viền đen ngoài khung hình.
+ */
+export function detectCornersPureJS(source) {
+  const origW = source.naturalWidth || source.width;
+  const origH = source.naturalHeight || source.height;
+
   const fallback = {
-    tl: { x: Math.round(origW * 0.04), y: Math.round(origH * 0.04) },
-    tr: { x: Math.round(origW * 0.96), y: Math.round(origH * 0.04) },
-    br: { x: Math.round(origW * 0.96), y: Math.round(origH * 0.96) },
-    bl: { x: Math.round(origW * 0.04), y: Math.round(origH * 0.96) }
+    tl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.08) },
+    tr: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.08) },
+    br: { x: Math.round(origW * 0.92), y: Math.round(origH * 0.92) },
+    bl: { x: Math.round(origW * 0.08), y: Math.round(origH * 0.92) }
   };
 
   try {
-    // Thu nhỏ ảnh xuống chiều rộng ~320px để phân tích gradient siêu tốc (< 15ms)
     const scale = Math.min(1, 320 / origW);
     const w = Math.round(origW * scale);
     const h = Math.round(origH * scale);
@@ -72,91 +335,124 @@ export function autoDetectCorners(source) {
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
 
-    // 1. Chuyển sang Grayscale và tính Gradient Sobel
+    // 1. Chuyển thang xám và tạo biểu đồ tần suất (Histogram)
     const gray = new Uint8Array(w * h);
+    const hist = new Int32Array(256);
     for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-      gray[j] = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+      const g = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+      gray[j] = g;
+      hist[g]++;
     }
 
-    // 2. Tìm viền mép giấy bằng Sobel Gradient
-    const edges = new Uint8Array(w * h);
-    let edgeCount = 0;
-    for (let y = 1; y < h - 1; y++) {
-      for (let x = 1; x < w - 1; x++) {
-        const idx = y * w + x;
-        // Sobel X & Y
-        const gx = -gray[idx - w - 1] + gray[idx - w + 1]
-                   - 2 * gray[idx - 1] + 2 * gray[idx + 1]
-                   - gray[idx + w - 1] + gray[idx + w + 1];
-        const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1]
-                   + gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
-        const mag = Math.abs(gx) + Math.abs(gy);
-        if (mag > 90) {
-          edges[idx] = 255;
-          edgeCount++;
+    // 2. Tính ngưỡng Otsu tự động
+    const total = w * h;
+    let sum = 0;
+    for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let sumB = 0, wB = 0, varMax = 0, threshold = 128;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t];
+      if (wB === 0) continue;
+      const wF = total - wB;
+      if (wF === 0) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB;
+      const mF = (sum - sumB) / wF;
+      const varBetween = wB * wF * (mB - mF) * (mB - mF);
+      if (varBetween > varMax) {
+        varMax = varBetween;
+        threshold = t;
+      }
+    }
+
+    // 3. Kiểm tra cực tính viền ảnh
+    let borderBright = 0, totalBorder = 0;
+    for (let x = 0; x < w; x++) {
+      if (gray[x] >= threshold) borderBright++;
+      if (gray[(h - 1) * w + x] >= threshold) borderBright++;
+      totalBorder += 2;
+    }
+    for (let y = 0; y < h; y++) {
+      if (gray[y * w] >= threshold) borderBright++;
+      if (gray[y * w + (w - 1)] >= threshold) borderBright++;
+      totalBorder += 2;
+    }
+    const invert = (borderBright / totalBorder) > 0.5;
+
+    // 4. Tìm khối tâm (Center of Mass) của vùng giấy tài liệu
+    let sumX = 0, sumY = 0, count = 0;
+    const margin = Math.max(3, Math.round(w * 0.03)); // Cách mép ảnh 3% để loại bỏ phản quang rìa ống kính
+    for (let y = margin; y < h - margin; y++) {
+      for (let x = margin; x < w - margin; x++) {
+        const isPaper = invert ? (gray[y * w + x] < threshold) : (gray[y * w + x] >= threshold);
+        if (isPaper) {
+          sumX += x;
+          sumY += y;
+          count++;
         }
       }
     }
 
-    // Nếu không có đủ điểm viền, dùng vị trí dự phòng
-    if (edgeCount < (w * h) * 0.01) {
-      return fallback;
-    }
+    if (count < total * 0.10) return fallback;
 
-    // 3. Tìm 4 điểm cực trị theo 4 góc phần tư:
-    // TL: min(x + y)
-    // TR: max(x - y)
-    // BR: max(x + y)
-    // BL: min(x - y)
-    let minTL = Infinity, maxTR = -Infinity;
-    let maxBR = -Infinity, minBL = Infinity;
-    let ptTL = { x: 0, y: 0 };
-    let ptTR = { x: w, y: 0 };
-    let ptBR = { x: w, y: h };
-    let ptBL = { x: 0, y: h };
+    const cX = sumX / count;
+    const cY = sumY / count;
 
-    // Giới hạn biên an toàn 2% để tránh bắt nhầm cạnh ngoài ảnh
-    const borderX = Math.round(w * 0.02);
-    const borderY = Math.round(h * 0.02);
+    // 5. Tìm 4 điểm xa tâm nhất thuộc vùng giấy trong 4 góc phần tư
+    let tl = null, tr = null, br = null, bl = null;
+    let maxTL = 0, maxTR = 0, maxBR = 0, maxBL = 0;
 
-    for (let y = borderY; y < h - borderY; y++) {
-      for (let x = borderX; x < w - borderX; x++) {
-        if (edges[y * w + x] === 255) {
-          const sum = x + y;
-          const diff = x - y;
-
-          if (sum < minTL) { minTL = sum; ptTL = { x, y }; }
-          if (diff > maxTR) { maxTR = diff; ptTR = { x, y }; }
-          if (sum > maxBR) { maxBR = sum; ptBR = { x, y }; }
-          if (diff < minBL) { minBL = diff; ptBL = { x, y }; }
+    for (let y = margin; y < h - margin; y++) {
+      for (let x = margin; x < w - margin; x++) {
+        const isPaper = invert ? (gray[y * w + x] < threshold) : (gray[y * w + x] >= threshold);
+        if (isPaper) {
+          const dist = (x - cX) ** 2 + (y - cY) ** 2;
+          if (x <= cX && y <= cY && dist > maxTL) { maxTL = dist; tl = { x, y }; }
+          else if (x >= cX && y <= cY && dist > maxTR) { maxTR = dist; tr = { x, y }; }
+          else if (x >= cX && y >= cY && dist > maxBR) { maxBR = dist; br = { x, y }; }
+          else if (x <= cX && y >= cY && dist > maxBL) { maxBL = dist; bl = { x, y }; }
         }
       }
     }
 
-    // Kiểm tra diện tích tứ giác tìm được
+    if (!tl || !tr || !br || !bl) return fallback;
+
     const area = 0.5 * Math.abs(
-      (ptTL.x * ptTR.y - ptTR.x * ptTL.y) +
-      (ptTR.x * ptBR.y - ptBR.x * ptTR.y) +
-      (ptBR.x * ptBL.y - ptBL.x * ptBR.y) +
-      (ptBL.x * ptTL.y - ptTL.x * ptBL.y)
+      (tl.x * tr.y - tr.x * tl.y) +
+      (tr.x * br.y - br.x * tr.y) +
+      (br.x * bl.y - bl.x * br.y) +
+      (bl.x * tl.y - bl.x * tl.y)
     );
 
-    // Nếu diện tích quá nhỏ (< 20% khung hình), dùng fallback
-    if (area < (w * h) * 0.2) {
-      return fallback;
-    }
+    if (area < total * 0.12) return fallback;
 
-    // Quy đổi tọa độ về kích thước ảnh gốc
     return {
-      tl: { x: Math.round(ptTL.x / scale), y: Math.round(ptTL.y / scale) },
-      tr: { x: Math.round(ptTR.x / scale), y: Math.round(ptTR.y / scale) },
-      br: { x: Math.round(ptBR.x / scale), y: Math.round(ptBR.y / scale) },
-      bl: { x: Math.round(ptBL.x / scale), y: Math.round(ptBL.y / scale) }
+      tl: { x: Math.round(tl.x / scale), y: Math.round(tl.y / scale) },
+      tr: { x: Math.round(tr.x / scale), y: Math.round(tr.y / scale) },
+      br: { x: Math.round(br.x / scale), y: Math.round(br.y / scale) },
+      bl: { x: Math.round(bl.x / scale), y: Math.round(bl.y / scale) }
     };
   } catch (err) {
-    console.warn('Lỗi autoDetectCorners, dùng fallback:', err);
+    console.warn('Lỗi pure JS detect, dùng fallback:', err);
     return fallback;
   }
+}
+
+/**
+ * Tự động tìm 4 góc tài liệu: Ưu tiên OpenCV.js (Biện pháp mạnh), dự phòng Pure JS
+ * @param {HTMLImageElement|HTMLCanvasElement} source 
+ * @returns {{tl: {x,y}, tr: {x,y}, br: {x,y}, bl: {x,y}}}
+ */
+export function autoDetectCorners(source) {
+  if (isOpenCVReady()) {
+    const opencvResult = detectCornersOpenCV(source);
+    if (opencvResult) {
+      console.log('⚡ Nhận diện 4 góc thành công bằng OpenCV.js Wasm');
+      return opencvResult;
+    }
+  }
+
+  console.log('💡 Dùng thuật toán Pure JS nhận diện mép tài liệu');
+  return detectCornersPureJS(source);
 }
 
 // ================= 2. NẮN THẲNG PHỐI CẢNH 4 GÓC (PERSPECTIVE TRANSFORM) =================
@@ -210,29 +506,7 @@ function solveHomography(src, dst) {
 }
 
 /**
- * Nghịch đảo ma trận 3x3
- */
-function invertMatrix3x3(m) {
-  const [a, b, c, d, e, f, g, h, i] = m;
-  const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-  if (Math.abs(det) < 1e-8) return null;
-  const invDet = 1 / det;
-
-  return [
-    (e * i - f * h) * invDet,
-    (c * h - b * i) * invDet,
-    (b * f - c * e) * invDet,
-    (f * g - d * i) * invDet,
-    (a * i - c * g) * invDet,
-    (c * d - a * f) * invDet,
-    (d * h - e * g) * invDet,
-    (g * b - a * h) * invDet,
-    (a * e - b * d) * invDet
-  ];
-}
-
-/**
- * Nắn thẳng góc phối cảnh từ 4 điểm bất kỳ (Bilinear Interpolation)
+ * Nắn thẳng góc phối cảnh từ 4 điểm bất kỳ (Hỗ trợ OpenCV tăng tốc Wasm hoặc Pure JS Bilinear)
  * @param {HTMLCanvasElement|HTMLImageElement} source 
  * @param {{tl: {x,y}, tr: {x,y}, br: {x,y}, bl: {x,y}}} corners 
  * @returns {HTMLCanvasElement}
@@ -241,9 +515,6 @@ export function warpPerspective(source, corners) {
   const srcCanvas = createCanvasFromSource(source);
   const srcW = srcCanvas.width;
   const srcH = srcCanvas.height;
-  const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
-  const srcImgData = srcCtx.getImageData(0, 0, srcW, srcH);
-  const srcData = srcImgData.data;
 
   // 1. Tính toán kích thước hình chữ nhật đích chuẩn (W, H)
   const widthTop = Math.hypot(corners.tr.x - corners.tl.x, corners.tr.y - corners.tl.y);
@@ -263,11 +534,54 @@ export function warpPerspective(source, corners) {
   const outCanvas = document.createElement('canvas');
   outCanvas.width = outW;
   outCanvas.height = outH;
+
+  // Nếu OpenCV.js đã sẵn sàng, nắn bằng WebAssembly siêu tốc (1-2ms)
+  if (isOpenCVReady()) {
+    try {
+      const cv = window.cv;
+      const srcMat = cv.imread(srcCanvas);
+      const dstMat = new cv.Mat();
+      const dsize = new cv.Size(outW, outH);
+
+      const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        corners.tl.x, corners.tl.y,
+        corners.tr.x, corners.tr.y,
+        corners.br.x, corners.br.y,
+        corners.bl.x, corners.bl.y
+      ]);
+
+      const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        0, 0,
+        outW, 0,
+        outW, outH,
+        0, outH
+      ]);
+
+      const M = cv.getPerspectiveTransform(srcTri, dstTri);
+      cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_REPLICATE);
+      cv.imshow(outCanvas, dstMat);
+
+      srcMat.delete();
+      dstMat.delete();
+      srcTri.delete();
+      dstTri.delete();
+      M.delete();
+
+      return outCanvas;
+    } catch (e) {
+      console.warn('OpenCV warpPerspective lỗi, chuyển sang Pure JS:', e);
+    }
+  }
+
+  // Phương án dự phòng Pure JS Homography
+  const srcCtx = srcCanvas.getContext('2d', { willReadFrequently: true });
+  const srcImgData = srcCtx.getImageData(0, 0, srcW, srcH);
+  const srcData = srcImgData.data;
+
   const outCtx = outCanvas.getContext('2d');
   const outImgData = outCtx.createImageData(outW, outH);
   const outData = outImgData.data;
 
-  // 2. Điểm nguồn và điểm đích
   const srcPts = [corners.tl, corners.tr, corners.br, corners.bl];
   const dstPts = [
     { x: 0, y: 0 },
@@ -276,14 +590,11 @@ export function warpPerspective(source, corners) {
     { x: 0, y: outH }
   ];
 
-  // Tính ma trận ánh xạ từ Đích -> Nguồn (Inverse Homography)
   const H_inv = solveHomography(dstPts, srcPts);
   if (!H_inv) return srcCanvas;
 
   const [h0, h1, h2, h3, h4, h5, h6, h7, h8] = H_inv;
 
-  // 3. Quét từng điểm ảnh đích và nội suy song tuyến (Bilinear Interpolation) từ ảnh nguồn
-  let outIdx = 0;
   for (let dy = 0; dy < outH; dy++) {
     for (let dx = 0; dx < outW; dx++) {
       const z = h6 * dx + h7 * dy + h8;
@@ -298,27 +609,22 @@ export function warpPerspective(source, corners) {
 
         const fx = sx - x0;
         const fy = sy - y0;
-        const w00 = (1 - fx) * (1 - fy);
-        const w10 = fx * (1 - fy);
-        const w01 = (1 - fx) * fy;
-        const w11 = fx * fy;
+        const f00 = (1 - fx) * (1 - fy);
+        const f10 = fx * (1 - fy);
+        const f01 = (1 - fx) * fy;
+        const f11 = fx * fy;
 
-        const p00 = (y0 * srcW + x0) << 2;
-        const p10 = (y0 * srcW + x1) << 2;
-        const p01 = (y1 * srcW + x0) << 2;
-        const p11 = (y1 * srcW + x1) << 2;
+        const idx00 = (y0 * srcW + x0) * 4;
+        const idx10 = (y0 * srcW + x1) * 4;
+        const idx01 = (y1 * srcW + x0) * 4;
+        const idx11 = (y1 * srcW + x1) * 4;
 
-        outData[outIdx]     = w00 * srcData[p00]     + w10 * srcData[p10]     + w01 * srcData[p01]     + w11 * srcData[p11];
-        outData[outIdx + 1] = w00 * srcData[p00 + 1] + w10 * srcData[p10 + 1] + w01 * srcData[p01 + 1] + w11 * srcData[p11 + 1];
-        outData[outIdx + 2] = w00 * srcData[p00 + 2] + w10 * srcData[p10 + 2] + w01 * srcData[p01 + 2] + w11 * srcData[p11 + 2];
-        outData[outIdx + 3] = 255;
-      } else {
-        outData[outIdx] = 255;
-        outData[outIdx + 1] = 255;
-        outData[outIdx + 2] = 255;
+        const outIdx = (dy * outW + dx) * 4;
+        outData[outIdx]     = f00 * srcData[idx00]     + f10 * srcData[idx10]     + f01 * srcData[idx01]     + f11 * srcData[idx11];
+        outData[outIdx + 1] = f00 * srcData[idx00 + 1] + f10 * srcData[idx10 + 1] + f01 * srcData[idx01 + 1] + f11 * srcData[idx11 + 1];
+        outData[outIdx + 2] = f00 * srcData[idx00 + 2] + f10 * srcData[idx10 + 2] + f01 * srcData[idx01 + 2] + f11 * srcData[idx11 + 2];
         outData[outIdx + 3] = 255;
       }
-      outIdx += 4;
     }
   }
 
@@ -326,10 +632,10 @@ export function warpPerspective(source, corners) {
   return outCanvas;
 }
 
-// ================= 3. KHỬ BÓNG ĐỔ & CÂN BẰNG SÁNG NỀN (ILLUMINATION FLATTENING) =================
+// ================= 3. KHỬ BÓNG ĐỔ & CÂN BẰNG NỀN ÁNH SÁNG =================
 
 /**
- * Khử bóng đổ và cân bằng ánh sáng không đều trên trang giấy
+ * Khử bóng loang lổ, bóng tay cầm điện thoại bằng ma trận tích lũy ánh sáng nền
  * @param {HTMLCanvasElement} canvas 
  * @returns {HTMLCanvasElement}
  */
@@ -340,8 +646,8 @@ export function removeShadows(canvas) {
   const imgData = ctx.getImageData(0, 0, w, h);
   const data = imgData.data;
 
-  // 1. Tạo bản đồ ánh sáng nền thu nhỏ (Background Illumination Map)
-  const bgScale = Math.min(1, 100 / w);
+  // 1. Trích xuất nền ánh sáng (Background Illumination Map) bằng bản thu nhỏ
+  const bgScale = Math.min(1, 160 / Math.max(w, h));
   const bgW = Math.max(10, Math.round(w * bgScale));
   const bgH = Math.max(10, Math.round(h * bgScale));
 
@@ -349,34 +655,45 @@ export function removeShadows(canvas) {
   bgCanvas.width = bgW;
   bgCanvas.height = bgH;
   const bgCtx = bgCanvas.getContext('2d');
-  // Vẽ thu nhỏ và làm mờ mạnh để chỉ giữ lại mảng sáng tối căn phòng
-  bgCtx.filter = 'blur(12px)';
   bgCtx.drawImage(canvas, 0, 0, bgW, bgH);
-  const bgData = bgCtx.getImageData(0, 0, bgW, bgH).data;
 
-  // 2. Chia độ sáng ảnh gốc cho bản đồ nền để triệt tiêu bóng đổ
+  // Áp dụng bộ lọc mờ Gauss trên nền thu nhỏ
+  bgCtx.filter = 'blur(6px)';
+  bgCtx.drawImage(bgCanvas, 0, 0);
+
+  const bgImgData = bgCtx.getImageData(0, 0, bgW, bgH);
+  const bgData = bgImgData.data;
+
+  // 2. Chia độ sáng pixel cho độ sáng nền tương ứng
+  const scaleX = bgW / w;
+  const scaleY = bgH / h;
+
   for (let y = 0; y < h; y++) {
-    const bgY = Math.min(bgH - 1, Math.floor(y * bgScale));
+    const bgY = Math.min(bgH - 1, Math.floor(y * scaleY));
+    const bgRowOffset = bgY * bgW;
+    const rowOffset = y * w;
+
     for (let x = 0; x < w; x++) {
-      const bgX = Math.min(bgW - 1, Math.floor(x * bgScale));
-      const bgIdx = (bgY * bgW + bgX) << 2;
+      const idx = (rowOffset + x) * 4;
+      const bgX = Math.min(bgW - 1, Math.floor(x * scaleX));
+      const bgIdx = (bgRowOffset + bgX) * 4;
 
-      // Độ sáng nền tại vị trí (x, y)
-      const bgLum = Math.max(40, (bgData[bgIdx] * 77 + bgData[bgIdx + 1] * 150 + bgData[bgIdx + 2] * 29) >> 8);
-      const factor = 240 / bgLum;
+      const bgLum = (bgData[bgIdx] * 77 + bgData[bgIdx + 1] * 150 + bgData[bgIdx + 2] * 29) >> 8;
+      const bgSafe = Math.max(40, bgLum);
 
-      const idx = (y * w + x) << 2;
-      data[idx]     = Math.min(255, data[idx] * factor);
-      data[idx + 1] = Math.min(255, data[idx + 1] * factor);
-      data[idx + 2] = Math.min(255, data[idx + 2] * factor);
+      // Công thức phẳng hóa ánh sáng: Pixel_out = (Pixel_in / BG_Lum) * 235
+      const factor = 235 / bgSafe;
+      data[idx]     = Math.min(255, Math.max(0, data[idx] * factor));
+      data[idx + 1] = Math.min(255, Math.max(0, data[idx + 1] * factor));
+      data[idx + 2] = Math.min(255, Math.max(0, data[idx + 2] * factor));
     }
   }
 
-  const cleanCanvas = document.createElement('canvas');
-  cleanCanvas.width = w;
-  cleanCanvas.height = h;
-  cleanCanvas.getContext('2d').putImageData(imgData, 0, 0);
-  return cleanCanvas;
+  const resCanvas = document.createElement('canvas');
+  resCanvas.width = w;
+  resCanvas.height = h;
+  resCanvas.getContext('2d').putImageData(imgData, 0, 0);
+  return resCanvas;
 }
 
 // ================= 4. BỘ LỌC TÀI LIỆU MA THUẬT (MAGIC COLOR) =================

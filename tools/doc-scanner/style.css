@@ -675,3 +675,45 @@
   backdrop-filter: blur(20px);
   flex-shrink: 0;
 }
+
+/* Badge trạng thái AI Vision Engine trong Crop Modal */
+.engine-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #38bdf8;
+  letter-spacing: 0.2px;
+  transition: all 0.25s ease;
+}
+
+.engine-status-badge.ready {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.engine-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  animation: pulse-engine 1.5s infinite;
+}
+
+.engine-status-badge.ready .engine-pulse-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: none;
+}
+
+@keyframes pulse-engine {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
