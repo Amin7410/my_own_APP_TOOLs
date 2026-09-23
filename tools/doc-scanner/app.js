@@ -12,9 +12,7 @@ import {
   autoDetectCorners,
   warpPerspective,
   removeShadows,
-  applyMagicColorFilter,
-  loadOpenCV,
-  isOpenCVReady
+  applyMagicColorFilter
 } from '../../core/js/cv-engine.js';
 import { processDocumentImage } from '../../core/js/image-filters.js';
 
@@ -66,35 +64,6 @@ const btnCropApply = document.getElementById('btnCropApply');
 const btnCropAuto = document.getElementById('btnCropAuto');
 const btnCropFull = document.getElementById('btnCropFull');
 const btnCropRotate = document.getElementById('btnCropRotate');
-const engineStatusBadge = document.getElementById('engineStatusBadge');
-const engineStatusText = document.getElementById('engineStatusText');
-
-function updateEngineStatus() {
-  if (!engineStatusBadge) return;
-  if (isOpenCVReady()) {
-    engineStatusBadge.classList.add('ready');
-    if (engineStatusText) engineStatusText.textContent = '⚡ AI Vision (OpenCV)';
-  } else {
-    engineStatusBadge.classList.remove('ready');
-    if (engineStatusText) engineStatusText.textContent = 'Đang nạp AI Vision...';
-  }
-}
-
-// Khi OpenCV WebAssembly nạp xong
-window.addEventListener('opencv-ready', () => {
-  updateEngineStatus();
-  // Nếu người dùng đang mở modal căn góc, tự động áp dụng OpenCV để bắt góc cực chuẩn ngay
-  if (cropModal && cropModal.classList.contains('active') && cropActiveImage) {
-    const detected = autoDetectCorners(cropActiveImage);
-    if (detected) {
-      cropCorners = detected;
-      drawCropOverlay();
-    }
-  }
-});
-
-// Kích hoạt nạp sớm OpenCV ngay từ đầu
-loadOpenCV().then(() => updateEngineStatus());
 
 // ================= PHẦN TỬ BATCH CAMERA TOÀN MÀN HÌNH =================
 const cameraModal = document.getElementById('cameraModal');
@@ -157,7 +126,7 @@ async function addImages(fileList) {
  */
 async function processAndAddPage(dataUrl) {
   const rawImg = await loadImage(dataUrl);
-  
+
   // 1. Tự động nhận diện 4 góc mép giấy
   const detectedCorners = autoDetectCorners(rawImg);
 
@@ -404,7 +373,6 @@ function openCropModal(imageSource, initialCorners, onApplyCallback) {
   cropActiveImage = imageSource;
   cropPageCallback = onApplyCallback;
   cropRotation = 0;
-  updateEngineStatus();
 
   // Bản sao tọa độ 4 góc
   cropCorners = initialCorners ? JSON.parse(JSON.stringify(initialCorners)) : autoDetectCorners(imageSource);

@@ -1,27 +1,29 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#080d1a">
   <title>Document Scanner</title>
   <link rel="stylesheet" href="../../core/css/shell.css">
   <link rel="stylesheet" href="./style.css">
-  <!-- OpenCV.js WebAssembly - Biện pháp mạnh chuẩn công nghiệp -->
-  <script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0-release.1/dist/opencv.js"></script>
   <!-- jsPDF & JSZip CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
+
 <body>
   <!-- Navigation Bar chuẩn iOS App -->
   <header class="app-navbar">
     <div class="app-navbar-left">
       <a href="../../index.html" class="icon-btn-back" title="Quay lại">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
         </svg>
       </a>
       <h1 class="app-tool-title">Quét tài liệu</h1>
@@ -36,11 +38,12 @@
     <!-- Card Đặt tên tài liệu -->
     <div class="doc-name-card">
       <div class="doc-name-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
       </div>
       <input type="text" id="fileNameInput" class="doc-name-input" placeholder="Tên tài liệu..." value="Scan_Tai_Lieu">
@@ -50,9 +53,10 @@
     <div class="capture-section">
       <!-- Nút Chụp chính mặc định (toàn màn hình, chụp liên tiếp) -->
       <button class="btn-hero-capture" id="btnBatchCam">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
         </svg>
         <span>Chụp</span>
       </button>
@@ -60,10 +64,11 @@
 
       <!-- Nút Nhập ảnh phụ (chọn ảnh từ thư viện thiết bị) -->
       <label class="btn-sub-capture" style="width: 100%;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <span>Nhập ảnh</span>
         <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
@@ -73,12 +78,13 @@
     <!-- Empty State khi chưa có trang nào -->
     <div class="empty-scanner-state" id="dropZone">
       <div class="scanner-laser-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 7V4h3"/>
-          <path d="M20 7V4h-3"/>
-          <path d="M4 17v3h3"/>
-          <path d="M20 17v3h-3"/>
-          <line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 2"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M4 7V4h3" />
+          <path d="M20 7V4h-3" />
+          <path d="M4 17v3h3" />
+          <path d="M20 17v3h-3" />
+          <line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="2 2" />
         </svg>
       </div>
       <h3 class="empty-title">Chưa có bản quét nào</h3>
@@ -92,20 +98,23 @@
   <!-- Bottom Floating Action Bar cố định đáy ngón tay cái -->
   <footer class="app-bottom-bar" id="bottomBar" style="display: none;">
     <button class="btn btn-primary" id="btnExportPdf" style="flex: 1; min-height: 50px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="12" y1="18" x2="12" y2="12"/>
-        <polyline points="9 15 12 18 15 15"/>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <polyline points="9 15 12 18 15 15" />
       </svg>
       <span>Xuất / Chia sẻ PDF (<span class="export-count">0</span>)</span>
     </button>
 
-    <button class="btn btn-secondary" id="btnMoreOptions" style="width: 50px; min-height: 50px; padding: 0; border-radius: 14px;" title="Tùy chọn khác">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="1"/>
-        <circle cx="19" cy="12" r="1"/>
-        <circle cx="5" cy="12" r="1"/>
+    <button class="btn btn-secondary" id="btnMoreOptions"
+      style="width: 50px; min-height: 50px; padding: 0; border-radius: 14px;" title="Tùy chọn khác">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
       </svg>
     </button>
   </footer>
@@ -115,21 +124,23 @@
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
       <h3 class="sheet-title">Tùy chọn xuất file</h3>
-      
-      <button class="btn btn-secondary" id="btnExportZip" style="justify-content: flex-start; gap: 12px; min-height: 50px;">
+
+      <button class="btn btn-secondary" id="btnExportZip"
+        style="justify-content: flex-start; gap: 12px; min-height: 50px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="21 8 21 21 3 21 3 8"/>
-          <rect x="1" y="3" width="22" height="5"/>
-          <line x1="10" y1="12" x2="14" y2="12"/>
+          <polyline points="21 8 21 21 3 21 3 8" />
+          <rect x="1" y="3" width="22" height="5" />
+          <line x1="10" y1="12" x2="14" y2="12" />
         </svg>
         <span>Tải file nén ZIP (Tất cả ảnh)</span>
       </button>
 
-      <button class="btn btn-secondary" id="btnExportImages" style="justify-content: flex-start; gap: 12px; min-height: 50px;">
+      <button class="btn btn-secondary" id="btnExportImages"
+        style="justify-content: flex-start; gap: 12px; min-height: 50px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
         </svg>
         <span>Tải từng ảnh rời (.JPG)</span>
       </button>
@@ -166,16 +177,16 @@
         <div class="rotate-actions">
           <button class="btn btn-secondary" id="btnRotateLeft">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
             </svg>
             <span>Xoay trái</span>
           </button>
 
           <button class="btn btn-secondary" id="btnRotateRight">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
             </svg>
             <span>Xoay phải</span>
           </button>
@@ -183,9 +194,10 @@
 
         <!-- Nút mở căn góc phối cảnh 4 chốt -->
         <button class="btn btn-secondary" id="btnOpenCrop" style="width: 100%; min-height: 44px; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
-            <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14" />
+            <path d="M18 22V8a2 2 0 0 0-2-2H2" />
           </svg>
           <span>Căn góc & Cắt phối cảnh</span>
         </button>
@@ -226,13 +238,7 @@
       <!-- Navbar Căn góc -->
       <div class="modal-nav">
         <button class="modal-nav-btn" id="btnCropCancel">Hủy</button>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <span class="modal-nav-title">Căn góc tài liệu</span>
-          <div class="engine-status-badge" id="engineStatusBadge">
-            <span class="engine-pulse-dot" id="enginePulseDot"></span>
-            <span id="engineStatusText">Đang nạp AI Vision...</span>
-          </div>
-        </div>
+        <span class="modal-nav-title">Căn góc tài liệu</span>
         <button class="modal-nav-btn primary" id="btnCropApply">Nắn thẳng</button>
       </div>
 
@@ -251,27 +257,32 @@
       <!-- Thanh công cụ điều khiển căn góc phía dưới ngón tay cái -->
       <div class="crop-bottom-toolbar">
         <button class="btn btn-secondary" id="btnCropAuto" style="flex: 1; min-height: 44px; gap: 6px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z" />
           </svg>
           <span>Tự động căn</span>
         </button>
 
         <button class="btn btn-secondary" id="btnCropFull" style="flex: 1; min-height: 44px; gap: 6px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <polyline points="9 3 9 9 3 9"/>
-            <polyline points="15 3 15 9 21 9"/>
-            <polyline points="9 21 9 15 3 15"/>
-            <polyline points="15 21 15 15 21 15"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <polyline points="9 3 9 9 3 9" />
+            <polyline points="15 3 15 9 21 9" />
+            <polyline points="9 21 9 15 3 15" />
+            <polyline points="15 21 15 15 21 15" />
           </svg>
           <span>Tràn viền</span>
         </button>
 
-        <button class="btn btn-secondary" id="btnCropRotate" style="width: 48px; min-height: 44px; padding: 0;" title="Xoay ảnh">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
+        <button class="btn btn-secondary" id="btnCropRotate" style="width: 48px; min-height: 44px; padding: 0;"
+          title="Xoay ảnh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
           </svg>
         </button>
       </div>
@@ -281,11 +292,13 @@
   <!-- ================= BATCH CAMERA TOÀN MÀN HÌNH ================= -->
   <div class="camera-fullscreen-view" id="cameraModal">
     <div class="camera-top-hud">
-      <button class="btn btn-secondary" id="btnCameraClose" style="min-height: 38px; padding: 6px 14px; font-size: 0.85rem; border-radius: 20px;">Đóng</button>
+      <button class="btn btn-secondary" id="btnCameraClose"
+        style="min-height: 38px; padding: 6px 14px; font-size: 0.85rem; border-radius: 20px;">Đóng</button>
       <div class="camera-counter-badge">
         Đã chụp: <span id="cameraBatchCount">0</span> trang
       </div>
-      <button class="btn btn-primary" id="btnCameraFinish" style="min-height: 38px; padding: 6px 16px; font-size: 0.85rem; border-radius: 20px;">Hoàn tất</button>
+      <button class="btn btn-primary" id="btnCameraFinish"
+        style="min-height: 38px; padding: 6px 16px; font-size: 0.85rem; border-radius: 20px;">Hoàn tất</button>
     </div>
 
     <div class="camera-feed-box">
@@ -299,4 +312,5 @@
 
   <script type="module" src="./app.js"></script>
 </body>
+
 </html>
