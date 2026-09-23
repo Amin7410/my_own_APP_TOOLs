@@ -179,6 +179,15 @@
           </button>
         </div>
 
+        <!-- Nút mở căn góc phối cảnh 4 chốt -->
+        <button class="btn btn-secondary" id="btnOpenCrop" style="width: 100%; min-height: 44px; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
+            <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+          </svg>
+          <span>Căn góc & Cắt phối cảnh</span>
+        </button>
+
         <!-- Sliders -->
         <div class="sliders-panel">
           <div class="touch-slider-row">
@@ -205,6 +214,58 @@
             <input type="range" id="sliderThreshold" class="touch-range-input" min="60" max="210" value="135">
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CĂN GÓC PHỐI CẢNH 4 CHỐT & KÍNH LÚP ================= -->
+  <div class="modal-backdrop" id="cropModal">
+    <div class="modal-mobile-fullscreen">
+      <!-- Navbar Căn góc -->
+      <div class="modal-nav">
+        <button class="modal-nav-btn" id="btnCropCancel">Hủy</button>
+        <span class="modal-nav-title">Căn góc tài liệu</span>
+        <button class="modal-nav-btn primary" id="btnCropApply">Nắn thẳng</button>
+      </div>
+
+      <!-- Vùng tương tác chạm kéo 4 góc -->
+      <div class="crop-interactive-area" id="cropArea">
+        <canvas id="cropCanvas"></canvas>
+        <canvas id="cropOverlay"></canvas>
+
+        <!-- Kính lúp phóng đại 2.5x khi kéo ngón tay -->
+        <div class="magnifier-lens" id="magnifierLens" style="display: none;">
+          <canvas id="magnifierCanvas"></canvas>
+          <div class="magnifier-crosshair"></div>
+        </div>
+      </div>
+
+      <!-- Thanh công cụ điều khiển căn góc phía dưới ngón tay cái -->
+      <div class="crop-bottom-toolbar">
+        <button class="btn btn-secondary" id="btnCropAuto" style="flex: 1; min-height: 44px; gap: 6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/>
+          </svg>
+          <span>Tự động căn</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnCropFull" style="flex: 1; min-height: 44px; gap: 6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <polyline points="9 3 9 9 3 9"/>
+            <polyline points="15 3 15 9 21 9"/>
+            <polyline points="9 21 9 15 3 15"/>
+            <polyline points="15 21 15 15 21 15"/>
+          </svg>
+          <span>Tràn viền</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnCropRotate" style="width: 48px; min-height: 44px; padding: 0;" title="Xoay ảnh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
