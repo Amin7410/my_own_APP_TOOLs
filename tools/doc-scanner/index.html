@@ -44,39 +44,28 @@
       <input type="text" id="fileNameInput" class="doc-name-input" placeholder="Tên tài liệu..." value="Scan_Tai_Lieu">
     </div>
 
-    <!-- Khối nút thao tác phân cấp rõ ràng -->
+    <!-- Khối nút thao tác: Chế độ mặc định (Chụp) & Chế độ phụ (Nhập ảnh) -->
     <div class="capture-section">
-      <!-- Nút Hero chụp ảnh to bản -->
-      <label class="btn-hero-capture">
+      <!-- Nút Chụp chính mặc định (toàn màn hình, chụp liên tiếp) -->
+      <button class="btn-hero-capture" id="btnBatchCam">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
           <circle cx="12" cy="13" r="4"/>
         </svg>
-        <span>Chụp tài liệu mới</span>
-        <input type="file" id="camInput" accept="image/*" capture="environment" style="display: none;">
+        <span>Chụp</span>
+      </button>
+      <input type="file" id="camInput" accept="image/*" capture="environment" style="display: none;">
+
+      <!-- Nút Nhập ảnh phụ (chọn ảnh từ thư viện thiết bị) -->
+      <label class="btn-sub-capture" style="width: 100%;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span>Nhập ảnh</span>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
       </label>
-
-      <!-- Hàng nút phụ 2 bên cân đối -->
-      <div class="capture-secondary-row">
-        <label class="btn-sub-capture">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
-          <span>Thư viện ảnh</span>
-          <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
-        </label>
-
-        <button class="btn-sub-capture" id="btnBatchCam">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-            <polyline points="2 17 12 22 22 17"/>
-            <polyline points="2 12 12 17 22 12"/>
-          </svg>
-          <span>Chụp liên tục</span>
-        </button>
-      </div>
     </div>
 
     <!-- Empty State khi chưa có trang nào -->
@@ -91,7 +80,7 @@
         </svg>
       </div>
       <h3 class="empty-title">Chưa có bản quét nào</h3>
-      <p class="empty-desc">Bấm nút chụp phía trên hoặc kéo thả ảnh vào đây để bắt đầu tạo tài liệu</p>
+      <p class="empty-desc">Bấm nút "Chụp" ở trên để bắt đầu hoặc chọn "Nhập ảnh" từ máy</p>
     </div>
 
     <!-- Lưới hiển thị các trang -->

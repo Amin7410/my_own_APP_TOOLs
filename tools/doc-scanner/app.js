@@ -309,7 +309,7 @@ btnEditorSave.onclick = () => {
   editorModal.classList.remove('active');
 };
 
-// ================= MODAL CHỤP CAMERA LIÊN TỤC =================
+// ================= CHẾ ĐỘ CHỤP MẶC ĐỊNH =================
 btnBatchCam.onclick = async () => {
   triggerHaptic();
   try {
@@ -328,7 +328,9 @@ btnBatchCam.onclick = async () => {
     cameraVideo.srcObject = cameraMediaStream;
     cameraModal.classList.add('active');
   } catch (err) {
-    alert('Không thể mở camera web: ' + err.message + '\nBạn hãy dùng nút "Chụp tài liệu mới" của máy nhé.');
+    console.warn('getUserMedia không mở được, chuyển sang camera native của điện thoại:', err);
+    // Tự động mở camera native của điện thoại nếu web camera bị chặn
+    camInput.click();
   }
 };
 
@@ -375,6 +377,9 @@ fileInput.addEventListener('change', e => {
 });
 
 setupDropZone(dropZone, addImages);
+dropZone.addEventListener('click', () => {
+  btnBatchCam.click();
+});
 
 btnClear.onclick = () => {
   if (confirm('Xóa toàn bộ các trang đã quét?')) {
