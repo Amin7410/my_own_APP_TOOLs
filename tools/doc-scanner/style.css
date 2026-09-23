@@ -1,0 +1,440 @@
+/* style.css - Giao diện tối ưu di động (iPhone 12, Redmi Note 9S & màn hình nhỏ) */
+
+/* Thanh điều khiển trên cùng (Tên file & Nút chụp) */
+.mobile-top-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filename-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filename-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.filename-input {
+  flex: 1;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 16px; /* Chống auto-zoom trên iOS */
+  min-height: 42px;
+  outline: none;
+}
+
+.filename-input:focus {
+  border-color: var(--border-active);
+}
+
+/* Các nút chụp ảnh tối ưu thao tác ngón cái */
+.capture-actions-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .capture-actions-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .btn-batch-cam {
+    grid-column: span 2;
+  }
+}
+
+.btn-icon-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 6px;
+  min-height: 52px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.btn-icon-label span.icon {
+  font-size: 1.2rem;
+  margin-bottom: 2px;
+}
+
+/* Lưới hiển thị các trang tài liệu (2 cột chuẩn cho điện thoại) */
+.scanner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (min-width: 640px) {
+  .scanner-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+}
+
+.page-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.page-card:active {
+  border-color: var(--border-active);
+}
+
+.page-preview-box {
+  width: 100%;
+  height: 190px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.page-preview-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.page-filter-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.page-edit-hint {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.page-card-footer {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  background: var(--bg-surface);
+}
+
+.page-order-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-touch-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.btn-touch-small:active {
+  background: var(--bg-surface-hover);
+  color: #fff;
+}
+
+/* ================= MODAL EDITOR CHUẨN FULL-SCREEN CHO MOBILE ================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  z-index: 1000;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+.modal-mobile-fullscreen {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Thanh điều hướng của Modal trên điện thoại */
+.modal-nav {
+  height: 52px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.modal-nav-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Vùng hiển thị Canvas */
+.editor-canvas-container {
+  flex: 1;
+  background: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.editor-canvas-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+}
+
+/* Thanh công cụ chỉnh sửa phía dưới (Thumb zone) */
+.editor-bottom-tools {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+.filter-pill-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-pill {
+  flex: 1;
+  min-width: 80px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 20px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filter-pill:active {
+  background: var(--bg-surface-hover);
+}
+
+.filter-pill.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--border-active);
+  color: #38bdf8;
+}
+
+.rotate-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rotate-actions .btn {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.85rem;
+}
+
+/* Thanh trượt điều chỉnh */
+.sliders-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.touch-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.touch-range-input {
+  width: 100%;
+  height: 28px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* ================= BATCH CAMERA TOÀN MÀN HÌNH ================= */
+.camera-fullscreen-view {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 2000;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: env(safe-area-inset-top, 16px);
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.camera-fullscreen-view.active {
+  display: flex;
+}
+
+.camera-top-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  z-index: 10;
+}
+
+.camera-counter-badge {
+  background: rgba(0, 0, 0, 0.65);
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.camera-feed-box {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-feed-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-bottom-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 16px 24px;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+/* Nút chụp tròn to phong cách iPhone Camera */
+.camera-shutter-large {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.camera-shutter-large:active {
+  transform: scale(0.9);
+  background: #38bdf8;
+}
+
+/* ================= BOTTOM BAR TỐI ƯU MOBILE ================= */
+.scanner-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-subtle);
+  padding: 10px 14px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  display: none;
+  align-items: center;
+  gap: 10px;
+  z-index: 90;
+}
+
+.scanner-bottom-bar.active {
+  display: flex;
+}
+
+.btn-export-main {
+  flex: 1;
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+}
+
+.btn-export-secondary {
+  min-height: 48px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+}

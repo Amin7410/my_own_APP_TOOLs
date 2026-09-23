@@ -1,0 +1,32 @@
+/* Scoped styles riêng cho PDF Viewer */
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pdf-viewport {
+  flex: 1;
+  background: var(--bg-workspace);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  min-height: 520px;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.pdf-sheet {
+  background: #ffffff;
+  color: #000000;
+  width: 100%;
+  max-width: 800px;
+  min-height: 1000px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transition: max-width 0.15s ease-out;
+}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <title>Document Scanner - Mobile</title>
+  <link rel="stylesheet" href="../../core/css/shell.css">
+  <link rel="stylesheet" href="./style.css">
+  <!-- jsPDF & JSZip CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+  <!-- Header trên cùng chuẩn Safe Area iPhone/Android -->
+  <header class="app-navbar">
+    <div class="app-navbar-left">
+      <a href="../../index.html" class="back-link">← Tools</a>
+      <span class="app-tool-title">Document Scanner</span>
+    </div>
+    <div class="app-navbar-actions">
+      <button class="btn btn-danger" id="btnClear" style="display:none; padding: 4px 10px; min-height: 36px; font-size: 0.8rem;">Xóa hết</button>
+    </div>
+  </header>
+
+  <!-- Workspace chính -->
+  <main class="app-workspace">
+    <!-- Card Tên tài liệu & Nút chụp nhanh -->
+    <div class="mobile-top-card">
+      <div class="filename-row">
+        <label for="fileNameInput" class="filename-label">Tên file:</label>
+        <input type="text" id="fileNameInput" class="filename-input" placeholder="Tên tài liệu..." value="Scan_Tai_Lieu">
+      </div>
+
+      <!-- 3 nút bấm kích thước lớn dễ chạm ngón tay cái -->
+      <div class="capture-actions-grid">
+        <!-- Chụp nhanh qua Camera hệ thống (iOS Camera & Android Camera) -->
+        <label class="btn btn-primary btn-icon-label" style="cursor: pointer;">
+          <span class="icon">📷</span>
+          <span>Chụp 1 ảnh</span>
+          <input type="file" id="camInput" accept="image/*" capture="environment" style="display: none;">
+        </label>
+
+        <!-- Chọn nhiều ảnh đã chụp sẵn trong thư viện ảnh -->
+        <label class="btn btn-icon-label" style="cursor: pointer;">
+          <span class="icon">🖼️</span>
+          <span>Chọn từ máy</span>
+          <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+        </label>
+
+        <!-- Chụp liên tục qua camera web không cần thoát màn hình -->
+        <button class="btn btn-icon-label btn-batch-cam" id="btnBatchCam">
+          <span class="icon">📸</span>
+          <span>Chụp liên tục</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dropzone kéo thả ảnh -->
+    <div class="app-dropzone" id="dropZone">
+      Chưa có trang nào.<br>
+      Bấm <strong>📷 Chụp 1 ảnh</strong> hoặc <strong>🖼️ Chọn từ máy</strong> để bắt đầu quét tài liệu.
+    </div>
+
+    <!-- Lưới 2 cột hiển thị các trang -->
+    <div class="scanner-grid" id="grid"></div>
+  </main>
+
+  <!-- Thanh thao tác cố định ở đáy ngón tay cái (Mobile Bottom Bar) -->
+  <footer class="scanner-bottom-bar" id="bottomBar">
+    <button class="btn btn-primary btn-export-main" id="btnExportPdf">
+      Xuất / Chia sẻ PDF (<span class="export-count">0</span>)
+    </button>
+    <button class="btn btn-export-secondary" id="btnMoreOptions" title="Các định dạng khác">
+      •••
+    </button>
+  </footer>
+
+  <!-- ================= POPUP TÙY CHỌN XUẤT PHỤ (ZIP, ẢNH) ================= -->
+  <div class="modal-backdrop" id="optionsModal">
+    <div class="modal-content" style="max-width: 360px; margin: auto; padding: 16px; border-radius: 16px;">
+      <h3 style="font-size: 1rem; margin-bottom: 12px; color: #fff;">Định dạng xuất khác</h3>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn" id="btnExportZip" style="justify-content: flex-start; min-height: 48px;">
+          📦 Tải file nén ZIP (Tất cả ảnh)
+        </button>
+        <button class="btn" id="btnExportImages" style="justify-content: flex-start; min-height: 48px;">
+          🖼️ Tải từng ảnh rời (.JPG)
+        </button>
+        <button class="btn" id="btnCloseOptions" style="margin-top: 8px;">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CHỈNH SỬA TRANG (FULL-SCREEN MOBILE SHEET) ================= -->
+  <div class="modal-backdrop" id="editorModal">
+    <div class="modal-mobile-fullscreen">
+      <!-- Navbar của Editor -->
+      <div class="modal-nav">
+        <button class="btn" id="btnEditorCancel" style="border:none; background:transparent; color:#94a3b8; font-size:0.95rem; min-height:36px; padding:4px 8px;">Hủy</button>
+        <span class="modal-nav-title" id="editorModalTitle">Sửa trang 1</span>
+        <button class="btn btn-primary" id="btnEditorSave" style="min-height:36px; padding:6px 14px; font-size:0.9rem;">Xong</button>
+      </div>
+
+      <!-- Vùng hiển thị Canvas tài liệu -->
+      <div class="editor-canvas-container">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+
+      <!-- Bộ công cụ điều khiển ở vùng ngón tay cái -->
+      <div class="editor-bottom-tools">
+        <!-- Danh sách Pill bộ lọc cuộn ngang -->
+        <div class="filter-pill-list">
+          <button class="filter-pill active" data-filter="magic">Màu tài liệu</button>
+          <button class="filter-pill" data-filter="bw">Trắng đen</button>
+          <button class="filter-pill" data-filter="grayscale">Thang xám</button>
+          <button class="filter-pill" data-filter="original">Ảnh gốc</button>
+        </div>
+
+        <!-- Nút xoay 90 độ -->
+        <div class="rotate-actions">
+          <button class="btn" id="btnRotateLeft">↶ Xoay trái</button>
+          <button class="btn" id="btnRotateRight">↷ Xoay phải</button>
+        </div>
+
+        <!-- Thanh trượt điều chỉnh sáng / tương phản / ngưỡng -->
+        <div class="sliders-panel">
+          <div class="touch-slider-row">
+            <div class="slider-header">
+              <span>Độ sáng</span>
+              <span id="valBrightness">0</span>
+            </div>
+            <input type="range" id="sliderBrightness" class="touch-range-input" min="-80" max="80" value="0">
+          </div>
+
+          <div class="touch-slider-row">
+            <div class="slider-header">
+              <span>Độ tương phản</span>
+              <span id="valContrast">0</span>
+            </div>
+            <input type="range" id="sliderContrast" class="touch-range-input" min="-60" max="60" value="0">
+          </div>
+
+          <div class="touch-slider-row" id="thresholdGroup" style="display: none;">
+            <div class="slider-header">
+              <span>Ngưỡng tách mực</span>
+              <span id="valThreshold">135</span>
+            </div>
+            <input type="range" id="sliderThreshold" class="touch-range-input" min="60" max="210" value="135">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= BATCH CAMERA TOÀN MÀN HÌNH ================= -->
+  <div class="camera-fullscreen-view" id="cameraModal">
+    <div class="camera-top-hud">
+      <button class="btn" id="btnCameraClose" style="background: rgba(0,0,0,0.6); border:none; color:#fff; min-height:36px; padding:6px 12px;">Đóng</button>
+      <div class="camera-counter-badge">
+        Đã chụp: <span id="cameraBatchCount">0</span> trang
+      </div>
+      <button class="btn btn-primary" id="btnCameraFinish" style="min-height:36px; padding:6px 14px; font-size:0.85rem;">Xong</button>
+    </div>
+
+    <div class="camera-feed-box">
+      <video id="cameraVideo" class="camera-feed-video" autoplay playsinline muted></video>
+    </div>
+
+    <div class="camera-bottom-hud">
+      <div style="width: 50px;"></div>
+      <button class="camera-shutter-large" id="btnShutter" title="Chụp trang"></button>
+      <div style="width: 50px;"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

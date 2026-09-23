@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel Viewer</title>
+  <link rel="stylesheet" href="../../core/css/shell.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Header chuẩn Shell -->
+  <header class="app-navbar">
+    <div class="app-navbar-left">
+      <a href="../../index.html" class="back-link">← Quay lại</a>
+      <span class="app-tool-title">Excel Viewer</span>
+    </div>
+    <div class="nav-actions">
+      <label class="btn btn-primary" style="cursor: pointer;">
+        Mở Excel / CSV
+        <input type="file" id="input" accept=".xlsx, .xls, .csv" style="display: none;">
+      </label>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <main class="app-workspace">
+    <div class="excel-toolbar">
+      <span id="name" style="font-size: 0.85rem; color: var(--text-secondary);">Chưa chọn file</span>
+    </div>
+
+    <!-- Dropzone -->
+    <div class="app-dropzone" id="dropZone">
+      Kéo thả file Excel (.xlsx, .xls, .csv) vào đây hoặc bấm "Mở Excel / CSV"
+    </div>
+
+    <div class="excel-container" id="tableBox" style="display: none;">
+      <table class="excel-grid">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cột A</th>
+            <th>Cột B</th>
+            <th>Cột C</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Dữ liệu 1</td><td>Chi tiết A</td><td>100</td></tr>
+          <tr><td>2</td><td>Dữ liệu 2</td><td>Chi tiết B</td><td>200</td></tr>
+          <tr><td>3</td><td>Dữ liệu 3</td><td>Chi tiết C</td><td>300</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

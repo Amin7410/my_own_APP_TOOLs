@@ -1,0 +1,94 @@
+@import '../core/css/tokens.css';
+@import '../core/css/reset.css';
+
+body {
+  padding: 20px 16px;
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+.hub-container {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.hub-header {
+  margin-bottom: 16px;
+}
+
+.hub-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hub-search {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 16px; /* Chống auto zoom trên iOS */
+  min-height: 46px;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+
+.hub-search:focus {
+  border-color: var(--border-active);
+}
+
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  font-weight: 600;
+  font-size: 1rem;
+  min-height: 54px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tool-row:active {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-active);
+  color: var(--border-active);
+  transform: scale(0.98);
+}
+
+.tool-arrow {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.tool-row:active .tool-arrow {
+  color: var(--border-active);
+}
+
+.add-tool-btn {
+  border: 1px dashed var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.add-tool-btn:active {
+  border-color: var(--text-secondary);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+}

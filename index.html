@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <title>My Tools</title>
+  <link rel="stylesheet" href="./css/hub.css">
+</head>
+<body>
+  <div class="hub-container">
+    <header class="hub-header">
+      <h1 class="hub-title">My Tools</h1>
+    </header>
+
+    <input type="text" id="searchInput" class="hub-search" placeholder="Tìm tool..." autocomplete="off">
+
+    <main class="tool-list" id="toolList"></main>
+  </div>
+
+  <script type="module">
+    import { TOOL_REGISTRY } from './config.js';
+
+    const toolList = document.getElementById('toolList');
+    const searchInput = document.getElementById('searchInput');
+
+    function render(query = '') {
+      toolList.innerHTML = '';
+      const filtered = TOOL_REGISTRY.filter(t => t.name.toLowerCase().includes(query.toLowerCase()));
+
+      filtered.forEach(tool => {
+        const a = document.createElement('a');
+        a.href = tool.path;
+        a.className = 'tool-row';
+        a.innerHTML = `
+          <span>${tool.name}</span>
+          <span class="tool-arrow">→</span>
+        `;
+        toolList.appendChild(a);
+      });
+
+      const addBtn = document.createElement('div');
+      addBtn.className = 'tool-row add-tool-btn';
+      addBtn.textContent = '+ Thêm tool mới';
+      addBtn.onclick = () => {
+        alert('Nguyên tắc ETC:\n1. Tạo thư mục trong tools/<tên-tool>/\n2. Khai báo 1 dòng vào file config.js là xong!');
+      };
+      toolList.appendChild(addBtn);
+    }
+
+    searchInput.addEventListener('input', e => render(e.target.value.trim()));
+    render();
+  </script>
+</body>
+</html>

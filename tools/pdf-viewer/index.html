@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
+  <link rel="stylesheet" href="../../core/css/shell.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Header chuẩn Shell -->
+  <header class="app-navbar">
+    <div class="app-navbar-left">
+      <a href="../../index.html" class="back-link">← Quay lại</a>
+      <span class="app-tool-title">PDF Viewer</span>
+    </div>
+    <div class="app-navbar-actions">
+      <label class="btn btn-primary" style="cursor: pointer;">
+        Mở PDF
+        <input type="file" id="input" accept="application/pdf" style="display: none;">
+      </label>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <main class="app-workspace">
+    <div class="pdf-toolbar">
+      <button class="btn" id="btnOut">-</button>
+      <span id="zoom" style="font-weight: 600; min-width: 44px; text-align: center;">100%</span>
+      <button class="btn" id="btnIn">+</button>
+      <span id="name" style="margin-left: 12px; font-size: 0.85rem; color: var(--text-secondary);">Chưa chọn file</span>
+    </div>
+
+    <!-- Dropzone -->
+    <div class="app-dropzone" id="dropZone">
+      Kéo thả file PDF vào đây hoặc bấm "Mở PDF" ở trên
+    </div>
+
+    <!-- Viewport -->
+    <div class="pdf-viewport" id="viewport" style="display: none;">
+      <div class="pdf-sheet" id="page">Nội dung PDF</div>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
